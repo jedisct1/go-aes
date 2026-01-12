@@ -1,0 +1,609 @@
+// Deoxys-BC-256 and ButterKnife assembly optimizations for arm64
+// Uses ARM Crypto extensions (AESE, AESD, AESMC, AESIMC)
+#include "textflag.h"
+
+// ARM AESE does: XOR key, SubBytes, ShiftRows (key first)
+// To get SubBytes, ShiftRows only, use zero key with AESE
+// AESMC does: MixColumns
+
+// func deoxysBC256EncryptASM(state *Block, stk *[15]Block)
+// Encrypts using Deoxys-BC-256 structure:
+// XOR STK[0], then 13 rounds of (SubBytes, ShiftRows, MixColumns, XOR STK[r]), then final round
+TEXT ·deoxysBC256EncryptASM(SB),NOSPLIT,$0
+	MOVD state+0(FP), R0
+	MOVD stk+8(FP), R1
+
+	// Load state into V0
+	VLD1 (R0), [V0.B16]
+
+	// Create zero vector
+	VEOR V15.B16, V15.B16, V15.B16
+
+	// Initial whitening: XOR with STK[0]
+	VLD1 (R1), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Rounds 1-13: SubBytes, ShiftRows, MixColumns, XOR STK[r]
+	// Round 1
+	ADD $16, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 2
+	ADD $32, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 3
+	ADD $48, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 4
+	ADD $64, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 5
+	ADD $80, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 6
+	ADD $96, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 7
+	ADD $112, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 8
+	ADD $128, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 9
+	ADD $144, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 10
+	ADD $160, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 11
+	ADD $176, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 12
+	ADD $192, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 13
+	ADD $208, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Final round: SubBytes, ShiftRows, XOR STK[14] (no MixColumns)
+	ADD $224, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESE V15.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Store result
+	VST1 [V0.B16], (R0)
+	RET
+
+// func deoxysBC256DecryptASM(state *Block, stk *[15]Block)
+// Decrypts using Deoxys-BC-256. Uses InvSTK keys stored after STK.
+TEXT ·deoxysBC256DecryptASM(SB),NOSPLIT,$0
+	MOVD state+0(FP), R0
+	MOVD stk+8(FP), R1
+
+	// Load state
+	VLD1 (R0), [V0.B16]
+
+	// Create zero vector
+	VEOR V15.B16, V15.B16, V15.B16
+
+	// XOR with STK[14]
+	ADD $224, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Rounds 13-1: InvSubBytes, InvShiftRows, InvMixColumns, XOR InvSTK[r]
+	// InvSTK starts at offset 240
+	// Round 13 (InvSTK[13] at 240 + 13*16 = 448)
+	ADD $448, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 12 (offset 432)
+	ADD $432, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 11 (offset 416)
+	ADD $416, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 10 (offset 400)
+	ADD $400, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 9 (offset 384)
+	ADD $384, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 8 (offset 368)
+	ADD $368, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 7 (offset 352)
+	ADD $352, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 6 (offset 336)
+	ADD $336, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 5 (offset 320)
+	ADD $320, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 4 (offset 304)
+	ADD $304, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 3 (offset 288)
+	ADD $288, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 2 (offset 272)
+	ADD $272, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Round 1 (offset 256)
+	ADD $256, R1, R2
+	VLD1 (R2), [V1.B16]
+	AESD V15.B16, V0.B16
+	AESIMC V0.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Final round: InvSubBytes, InvShiftRows, XOR STK[0]
+	VLD1 (R1), [V1.B16]
+	AESD V15.B16, V0.B16
+	VEOR V1.B16, V0.B16, V0.B16
+
+	// Store result
+	VST1 [V0.B16], (R0)
+	RET
+
+// func butterKnifePreForkASM(state *Block, stk *[16]Block)
+// Performs 7 pre-fork rounds (KeyFirst: XOR key, SubBytes, ShiftRows, MixColumns)
+TEXT ·butterKnifePreForkASM(SB),NOSPLIT,$0
+	MOVD state+0(FP), R0
+	MOVD stk+8(FP), R1
+
+	// Load state
+	VLD1 (R0), [V0.B16]
+
+	// Create zero vector
+	VEOR V15.B16, V15.B16, V15.B16
+
+	// Round 0: XOR STK[0], SubBytes, ShiftRows, MixColumns
+	VLD1 (R1), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 1
+	ADD $16, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 2
+	ADD $32, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 3
+	ADD $48, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 4
+	ADD $64, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 5
+	ADD $80, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 6
+	ADD $96, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Store result
+	VST1 [V0.B16], (R0)
+	RET
+
+// func butterKnifeBranchASM(state *Block, forkState *Block, stk *[9]Block)
+// Performs one branch: 8 rounds + final AddRoundTweakey + feed-forward
+TEXT ·butterKnifeBranchASM(SB),NOSPLIT,$0
+	MOVD state+0(FP), R0
+	MOVD forkState+8(FP), R3
+	MOVD stk+16(FP), R1
+
+	// Load state and fork state
+	VLD1 (R0), [V0.B16]
+	VLD1 (R3), [V2.B16]
+
+	// Create zero vector
+	VEOR V15.B16, V15.B16, V15.B16
+
+	// Rounds 7-14 (8 rounds)
+	// Round 7
+	VLD1 (R1), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 8
+	ADD $16, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 9
+	ADD $32, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 10
+	ADD $48, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 11
+	ADD $64, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 12
+	ADD $80, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 13
+	ADD $96, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Round 14
+	ADD $112, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+
+	// Final AddRoundTweakey (round 15) and feed-forward
+	ADD $128, R1, R2
+	VLD1 (R2), [V1.B16]
+	VEOR V1.B16, V0.B16, V0.B16
+	VEOR V2.B16, V0.B16, V0.B16
+
+	// Store result
+	VST1 [V0.B16], (R0)
+	RET
+
+// func butterKnife4BranchesASM(branches *Block4, forkState *Block, stk *[4][9]Block)
+// Processes 4 branches in parallel using 4 NEON registers
+TEXT ·butterKnife4BranchesASM(SB),NOSPLIT,$0
+	MOVD branches+0(FP), R0
+	MOVD forkState+8(FP), R3
+	MOVD stk+16(FP), R1
+
+	// Load 4 branch states
+	VLD1.P 64(R0), [V0.B16, V1.B16, V2.B16, V3.B16]
+	SUB $64, R0, R0  // Restore R0 for later store
+
+	// Load fork state
+	VLD1 (R3), [V8.B16]
+
+	// Create zero vector
+	VEOR V15.B16, V15.B16, V15.B16
+
+	// Each branch's STK is 144 bytes (9 * 16)
+	// Branch 0: offset 0, Branch 1: offset 144, Branch 2: offset 288, Branch 3: offset 432
+
+	// Round 7 (index 0)
+	VLD1 (R1), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $144, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $288, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $432, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 8 (index 1, offset +16)
+	ADD $16, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $160, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $304, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $448, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 9 (index 2, offset +32)
+	ADD $32, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $176, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $320, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $464, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 10 (index 3, offset +48)
+	ADD $48, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $192, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $336, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $480, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 11 (index 4, offset +64)
+	ADD $64, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $208, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $352, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $496, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 12 (index 5, offset +80)
+	ADD $80, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $224, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $368, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $512, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 13 (index 6, offset +96)
+	ADD $96, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $240, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $384, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $528, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Round 14 (index 7, offset +112)
+	ADD $112, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	ADD $256, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	ADD $400, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	ADD $544, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	AESE V15.B16, V0.B16
+	AESMC V0.B16, V0.B16
+	AESE V15.B16, V1.B16
+	AESMC V1.B16, V1.B16
+	AESE V15.B16, V2.B16
+	AESMC V2.B16, V2.B16
+	AESE V15.B16, V3.B16
+	AESMC V3.B16, V3.B16
+
+	// Final AddRoundTweakey (round 15, index 8, offset +128) and feed-forward
+	ADD $128, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V0.B16, V0.B16
+	VEOR V8.B16, V0.B16, V0.B16
+
+	ADD $272, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V1.B16, V1.B16
+	VEOR V8.B16, V1.B16, V1.B16
+
+	ADD $416, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V2.B16, V2.B16
+	VEOR V8.B16, V2.B16, V2.B16
+
+	ADD $560, R1, R4
+	VLD1 (R4), [V4.B16]
+	VEOR V4.B16, V3.B16, V3.B16
+	VEOR V8.B16, V3.B16, V3.B16
+
+	// Store results
+	VST1 [V0.B16, V1.B16, V2.B16, V3.B16], (R0)
+	RET

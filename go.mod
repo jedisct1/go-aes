@@ -1,0 +1,5 @@
+module github.com/jedisct1/go-aes
+
+go 1.24.0
+
+require golang.org/x/sys v0.40.0
