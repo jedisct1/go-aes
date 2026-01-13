@@ -333,16 +333,17 @@ Reference: ePrint 2024/1534
 
 ### LeMac
 
-High-speed MAC using parallel AES rounds. Located in `examples/lemac.go`.
+High-speed MAC using parallel AES rounds. Located in `examples/lemac/`.
 
 ```go
-import lemac "github.com/jedisct1/go-aes/examples"
+import "github.com/jedisct1/go-aes/examples/lemac"
 
 var key [16]byte
+var nonce [16]byte
 copy(key[:], "SecretMACKey1234")
 
 ctx := lemac.NewLeMacContext(key)
-tag := ctx.Mac([]byte("Authenticate this"), nonce)
+tag := lemac.LeMac(ctx, []byte("Authenticate this"), nonce)
 ```
 
 Provides 128-bit security with unique nonces, 64-bit with static nonces.
