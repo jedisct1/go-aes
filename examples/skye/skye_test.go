@@ -431,9 +431,6 @@ func TestSkyeTestVector(t *testing.T) {
 		t.Fatalf("Skye failed: %v", err)
 	}
 
-	// Log output for debugging
-	t.Logf("Skye output: %x", output)
-
 	// Verify output is reproducible
 	output2, _ := Skye([][]byte{sample1, sample2, sample3}, &info, 32)
 	if !bytes.Equal(output, output2) {
