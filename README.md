@@ -18,9 +18,11 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
   - [Cryptographic Constructions](#cryptographic-constructions)
     - [Areion Permutations](#areion-permutations)
     - [AES-PRF](#aes-prf)
+    - [Haraka v2](#haraka-v2)
     - [KIASU-BC Tweakable Block Cipher](#kiasu-bc-tweakable-block-cipher)
     - [Deoxys-BC-256 Tweakable Block Cipher](#deoxys-bc-256-tweakable-block-cipher)
     - [ButterKnife TPRF](#butterknife-tprf)
+    - [Pholkos Tweakable Block Cipher](#pholkos-tweakable-block-cipher)
     - [Vistrutah Large-Block Cipher](#vistrutah-large-block-cipher)
   - [Examples](#examples)
     - [LeMac](#lemac)
@@ -44,7 +46,8 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
 - Parallel block processing: Process 2 or 4 blocks simultaneously with VAES/AVX2/AVX512
 - Multi-round functions: Optimized 4/6/7/10/12/14 round operations
 - Wide-block permutations: Areion256 (32-byte) and Areion512 (64-byte)
-- Tweakable block ciphers: KIASU-BC, Deoxys-BC-256
+- AES-based hashing: Haraka v2 (256-bit and 512-bit input variants)
+- Tweakable block ciphers: KIASU-BC, Deoxys-BC-256, Pholkos (256-bit and 512-bit)
 - Large-block ciphers: Vistrutah-256 and Vistrutah-512
 - Expanding PRF: ButterKnife (128-bit to 1024-bit expansion)
 - Cross-platform: Identical results on Intel and ARM with automatic fallback to pure Go
@@ -189,6 +192,27 @@ prf.PRF(&block)  // Modifies in place
 
 Performance: ~152 ns/op with zero allocations on Apple M4 ARM64.
 
+### Haraka v2
+
+AES-based cryptographic hash function designed for short inputs. Uses AES rounds with round constants derived from the digits of pi.
+
+- Haraka-256: 32-byte input, 32-byte output, 5 rounds
+- Haraka-512: 64-byte input, 32-byte output (truncated), 5 rounds
+
+```go
+// Hash a 32-byte input
+var input [32]byte
+copy(input[:], yourData)
+hash := aes.Haraka256(&input)
+
+// Hash a 64-byte input
+var largeInput [64]byte
+hash512 := aes.Haraka512(&largeInput)
+
+// Convenience: get single 16-byte block output
+block := aes.Haraka256ToBlock(&input)
+```
+
 ### KIASU-BC Tweakable Block Cipher
 
 AES-128 with 8-byte tweak XORed into each round. Used in ipcrypt-nd for non-deterministic IP address encryption.
@@ -237,6 +261,41 @@ output2 := ctx.Eval(&input2)
 Structure: 7 rounds before fork (domain 0), then 8 rounds in 8 parallel branches (domains 1-8), with feed-forward XOR.
 
 Reference: ePrint 2021/1534
+
+### Pholkos Tweakable Block Cipher
+
+Large-state tweakable block cipher family based on AES rounds, designed for high security and high performance. Follows the design strategy of Haraka and AESQ with two-round steps.
+
+Variants:
+- Pholkos-256-256: 256-bit block, 256-bit key, 128-bit tweak, 8 steps
+- Pholkos-512-256: 512-bit block, 256-bit key, 128-bit tweak, 10 steps
+- Pholkos-512-512: 512-bit block, 512-bit key, 128-bit tweak, 10 steps
+
+```go
+// Pholkos-256 (32-byte block, 32-byte key)
+var block aes.Pholkos256Block
+var key aes.Pholkos256Key
+var tweak aes.PholkosTweak
+copy(block[:], plaintext)
+copy(key[:], keyBytes)
+copy(tweak[:], tweakBytes)
+
+ctx := aes.NewPholkos256Context(&key, &tweak)
+ctx.Encrypt(&block)
+ctx.Decrypt(&block)
+
+// Pholkos-512 with 256-bit key
+var block512 aes.Pholkos512Block
+ctx512 := aes.NewPholkos512Context(&key, &tweak)
+ctx512.Encrypt(&block512)
+
+// Pholkos-512 with 512-bit key
+var key512 aes.Pholkos512Key
+ctx512_512 := aes.NewPholkos512Context512(&key512, &tweak)
+ctx512_512.Encrypt(&block512)
+```
+
+For single-block operations, convenience functions are available: `Pholkos256Encrypt`, `Pholkos256Decrypt`, `Pholkos512Encrypt`, `Pholkos512Decrypt`, `Pholkos512Encrypt512`, `Pholkos512Decrypt512`.
 
 ### Vistrutah Large-Block Cipher
 
@@ -362,14 +421,16 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 
 ### Constructions
 
-| Construction  | Key Functions                                                        |
-| ------------- | -------------------------------------------------------------------- |
-| Areion        | `Areion256`, `Areion512`, `InvAreion256`, `InvAreion512`             |
-| AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                         |
-| KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                    |
-| Deoxys-BC-256 | `NewDeoxysBC256`, `DeoxysBC256Encrypt`, `DeoxysBC256Decrypt`         |
-| ButterKnife   | `ButterKnife`, `NewButterKnifeContext`, `(*ButterKnifeContext).Eval` |
-| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`         |
+| Construction  | Key Functions                                                                  |
+| ------------- | ------------------------------------------------------------------------------ |
+| Areion        | `Areion256`, `Areion512`, `InvAreion256`, `InvAreion512`                       |
+| AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                                   |
+| Haraka        | `Haraka256`, `Haraka512`, `Haraka256ToBlock`, `Haraka512ToBlock`               |
+| KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                              |
+| Deoxys-BC-256 | `NewDeoxysBC256`, `DeoxysBC256Encrypt`, `DeoxysBC256Decrypt`                   |
+| ButterKnife   | `ButterKnife`, `NewButterKnifeContext`, `(*ButterKnifeContext).Eval`           |
+| Pholkos       | `NewPholkos256Context`, `NewPholkos512Context`, `Pholkos256Encrypt/Decrypt`    |
+| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`                   |
 
 ### Skye KDF (examples/skye)
 
