@@ -258,6 +258,47 @@ output2 := ctx.Eval(&input2)
 
 **Reference:** Based on "Masked Iterate-Fork-Iterate: A new Design Paradigm for Tweakable Expanding Pseudorandom Function" (ePrint 2021/1534).
 
+## Vistrutah Large-Block Cipher
+
+Vistrutah is a large-block cipher family providing 256-bit and 512-bit block sizes, built using the Generalized Even-Mansour construction with AES round functions. It's designed for applications requiring larger block sizes than standard AES, such as wide-block encryption modes and format-preserving encryption.
+
+**Vistrutah-256** operates on 32-byte blocks with 16 or 32-byte keys:
+
+```go
+// Encrypt a 32-byte block
+plaintext := make([]byte, 32)
+ciphertext := make([]byte, 32)
+key := make([]byte, 32) // 16 or 32 bytes
+
+// Use 14 rounds for full security, 10 rounds for HCTR2/ForkCipher applications
+aes.Vistrutah256Encrypt(plaintext, ciphertext, key, aes.Vistrutah256RoundsLong)
+
+// Decrypt
+aes.Vistrutah256Decrypt(ciphertext, plaintext, key, aes.Vistrutah256RoundsLong)
+```
+
+**Vistrutah-512** operates on 64-byte blocks with 32 or 64-byte keys:
+
+```go
+plaintext := make([]byte, 64)
+ciphertext := make([]byte, 64)
+key := make([]byte, 64) // 32 or 64 bytes
+
+// Round options depend on key size:
+// - 256-bit key: 10 (short) or 14 (long) rounds
+// - 512-bit key: 12 (short) or 18 (long) rounds
+aes.Vistrutah512Encrypt(plaintext, ciphertext, key, aes.Vistrutah512RoundsLong512Key)
+aes.Vistrutah512Decrypt(ciphertext, plaintext, key, aes.Vistrutah512RoundsLong512Key)
+```
+
+**Round configurations:**
+- `Vistrutah256RoundsShort` (10) - For HCTR2/ForkCipher applications
+- `Vistrutah256RoundsLong` (14) - Full security
+- `Vistrutah512RoundsShort256Key` (10), `Vistrutah512RoundsLong256Key` (14) - 256-bit keys
+- `Vistrutah512RoundsShort512Key` (12), `Vistrutah512RoundsLong512Key` (18) - 512-bit keys
+
+**Reference:** "Vistrutah: A Large Block Cipher for Disk Encryption" (ePrint 2024/1534).
+
 ## Key Schedules
 
 The library includes standard key expansion functions for AES-128, AES-192, and AES-256:
@@ -428,6 +469,16 @@ go test -bench=.
 - `ButterKnife(tweakey *Tweakey256, input *Block) *ButterKnifeOutput` - Evaluate ButterKnife TPRF
 - `NewButterKnifeContext(tweakey *Tweakey256) *ButterKnifeContext` - Create context with pre-expanded tweakey
 - `(*ButterKnifeContext).Eval(input *Block) *ButterKnifeOutput` - Evaluate with pre-expanded tweakey
+
+### Vistrutah Large-Block Cipher
+
+- `Vistrutah256Encrypt(plaintext, ciphertext, key []byte, rounds int)` - Encrypt 32-byte block
+- `Vistrutah256Decrypt(ciphertext, plaintext, key []byte, rounds int)` - Decrypt 32-byte block
+- `Vistrutah512Encrypt(plaintext, ciphertext, key []byte, rounds int)` - Encrypt 64-byte block
+- `Vistrutah512Decrypt(ciphertext, plaintext, key []byte, rounds int)` - Decrypt 64-byte block
+- Round constants: `Vistrutah256RoundsShort` (10), `Vistrutah256RoundsLong` (14)
+- Round constants: `Vistrutah512RoundsShort256Key` (10), `Vistrutah512RoundsLong256Key` (14)
+- Round constants: `Vistrutah512RoundsShort512Key` (12), `Vistrutah512RoundsLong512Key` (18)
 
 ### Skye KDF (examples/skye package)
 
