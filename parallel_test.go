@@ -393,6 +393,7 @@ func TestNoKeyVariantsParallel(t *testing.T) {
 func BenchmarkRoundSingle(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round(&block, &key)
@@ -407,6 +408,7 @@ func BenchmarkRound2Software(b *testing.B) {
 	blocks.SetBlock(1, &block)
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey2(&key)
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round2(&blocks, keys)
@@ -421,6 +423,7 @@ func BenchmarkRound2HW(b *testing.B) {
 	blocks.SetBlock(1, &block)
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey2(&key)
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round2HW(&blocks, keys)
@@ -436,6 +439,7 @@ func BenchmarkRound4Software(b *testing.B) {
 	}
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey4(&key)
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round4(&blocks, keys)
@@ -451,6 +455,7 @@ func BenchmarkRound4HW(b *testing.B) {
 	}
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey4(&key)
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round4HW(&blocks, keys)
@@ -465,6 +470,7 @@ func BenchmarkInvRound2Software(b *testing.B) {
 	blocks.SetBlock(1, &block)
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey2(&key)
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRound2(&blocks, keys)
@@ -479,6 +485,7 @@ func BenchmarkInvRound2HW(b *testing.B) {
 	blocks.SetBlock(1, &block)
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey2(&key)
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRound2HW(&blocks, keys)
@@ -494,6 +501,7 @@ func BenchmarkInvRound4Software(b *testing.B) {
 	}
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey4(&key)
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRound4(&blocks, keys)
@@ -509,6 +517,7 @@ func BenchmarkInvRound4HW(b *testing.B) {
 	}
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
 	keys := makeKey4(&key)
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRound4HW(&blocks, keys)

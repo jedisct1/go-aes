@@ -289,9 +289,31 @@ func BenchmarkDeoxysBC256Encrypt(b *testing.B) {
 		plaintext[i] = byte(i)
 	}
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DeoxysBC256Encrypt(rk, &plaintext)
+	}
+}
+
+// BenchmarkDeoxysBC256Decrypt benchmarks standard Deoxys-BC-256 decryption
+func BenchmarkDeoxysBC256Decrypt(b *testing.B) {
+	var tweakey Tweakey256
+	for i := 0; i < 32; i++ {
+		tweakey[i] = byte(i)
+	}
+
+	rk := NewDeoxysBC256(&tweakey)
+
+	var ciphertext Block
+	for i := 0; i < 16; i++ {
+		ciphertext[i] = byte(i)
+	}
+
+	b.SetBytes(16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DeoxysBC256Decrypt(rk, &ciphertext)
 	}
 }
 
@@ -437,6 +459,7 @@ func BenchmarkDeoxysBC256EncryptHW(b *testing.B) {
 		plaintext[i] = byte(i)
 	}
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DeoxysBC256EncryptHW(rk, &plaintext)
@@ -457,6 +480,7 @@ func BenchmarkDeoxysBC256DecryptHW(b *testing.B) {
 		ciphertext[i] = byte(i)
 	}
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DeoxysBC256DecryptHW(rk, &ciphertext)

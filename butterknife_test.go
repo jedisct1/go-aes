@@ -194,6 +194,7 @@ func BenchmarkButterKnife(b *testing.B) {
 		input[i] = byte(i)
 	}
 
+	b.SetBytes(128) // Output is 8 blocks = 128 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ButterKnife(&tweakey, &input)
@@ -227,6 +228,7 @@ func BenchmarkButterKnifeContextEval(b *testing.B) {
 		input[i] = byte(i)
 	}
 
+	b.SetBytes(128) // Output is 8 blocks = 128 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx.Eval(&input)
@@ -312,6 +314,7 @@ func BenchmarkButterKnifeHW(b *testing.B) {
 		input[i] = byte(i)
 	}
 
+	b.SetBytes(128) // Output is 8 blocks = 128 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ButterKnifeHW(&tweakey, &input)
@@ -332,6 +335,7 @@ func BenchmarkButterKnifeContextHWEval(b *testing.B) {
 		input[i] = byte(i)
 	}
 
+	b.SetBytes(128) // Output is 8 blocks = 128 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx.EvalHW(&input)

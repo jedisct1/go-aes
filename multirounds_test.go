@@ -826,6 +826,7 @@ func TestMultiRoundsWithRandomData(t *testing.T) {
 func BenchmarkRounds4Software(b *testing.B) {
 	keys := makeRoundKeys4()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds4(&block, keys)
@@ -835,6 +836,7 @@ func BenchmarkRounds4Software(b *testing.B) {
 func BenchmarkRounds4HW(b *testing.B) {
 	keys := makeRoundKeys4()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds4HW(&block, keys)
@@ -844,6 +846,7 @@ func BenchmarkRounds4HW(b *testing.B) {
 func BenchmarkRounds7Software(b *testing.B) {
 	keys := makeRoundKeys7()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds7(&block, keys)
@@ -853,6 +856,7 @@ func BenchmarkRounds7Software(b *testing.B) {
 func BenchmarkRounds7HW(b *testing.B) {
 	keys := makeRoundKeys7()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds7HW(&block, keys)
@@ -862,6 +866,7 @@ func BenchmarkRounds7HW(b *testing.B) {
 func BenchmarkRounds10Software(b *testing.B) {
 	keys := makeRoundKeys10()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10(&block, keys)
@@ -871,6 +876,7 @@ func BenchmarkRounds10Software(b *testing.B) {
 func BenchmarkRounds10HW(b *testing.B) {
 	keys := makeRoundKeys10()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10HW(&block, keys)
@@ -880,6 +886,7 @@ func BenchmarkRounds10HW(b *testing.B) {
 func BenchmarkRounds12Software(b *testing.B) {
 	keys := makeRoundKeys12()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds12(&block, keys)
@@ -889,6 +896,7 @@ func BenchmarkRounds12Software(b *testing.B) {
 func BenchmarkRounds12HW(b *testing.B) {
 	keys := makeRoundKeys12()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds12HW(&block, keys)
@@ -898,6 +906,7 @@ func BenchmarkRounds12HW(b *testing.B) {
 func BenchmarkRounds14Software(b *testing.B) {
 	keys := makeRoundKeys14()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds14(&block, keys)
@@ -907,6 +916,7 @@ func BenchmarkRounds14Software(b *testing.B) {
 func BenchmarkRounds14HW(b *testing.B) {
 	keys := makeRoundKeys14()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds14HW(&block, keys)
@@ -915,6 +925,7 @@ func BenchmarkRounds14HW(b *testing.B) {
 
 func BenchmarkRounds10NoKeySoftware(b *testing.B) {
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10NoKey(&block)
@@ -923,6 +934,7 @@ func BenchmarkRounds10NoKeySoftware(b *testing.B) {
 
 func BenchmarkRounds10NoKeyHW(b *testing.B) {
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10NoKeyHW(&block)
@@ -933,6 +945,7 @@ func BenchmarkRounds10NoKeyHW(b *testing.B) {
 func BenchmarkRounds10SequentialSingle(b *testing.B) {
 	keys := makeRoundKeys10()
 	block := testBlockMR
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundHW(&block, &keys[0])
@@ -1439,6 +1452,7 @@ func BenchmarkRounds10_2Software(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10_2(&blocks, keys)
@@ -1451,6 +1465,7 @@ func BenchmarkRounds10_2HW(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10_2HW(&blocks, keys)
@@ -1463,6 +1478,7 @@ func BenchmarkRounds10_4Software(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10_4(&blocks, keys)
@@ -1475,6 +1491,7 @@ func BenchmarkRounds10_4HW(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10_4HW(&blocks, keys)
@@ -1490,6 +1507,7 @@ func BenchmarkRounds10_4xSingleHW(b *testing.B) {
 			blocks[i][j] = byte(i*16 + j)
 		}
 	}
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10HW(&blocks[0], keys)
@@ -1504,6 +1522,7 @@ func BenchmarkRounds10NoKey_2HW(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(32) // 2 blocks = 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10NoKey_2HW(&blocks)
@@ -1515,6 +1534,7 @@ func BenchmarkRounds10NoKey_4HW(b *testing.B) {
 	for i := range blocks {
 		blocks[i] = byte(i)
 	}
+	b.SetBytes(64) // 4 blocks = 64 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Rounds10NoKey_4HW(&blocks)

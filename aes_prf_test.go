@@ -240,6 +240,7 @@ func BenchmarkAESPRF(b *testing.B) {
 	var block Block
 	copy(block[:], input)
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(block[:], input)

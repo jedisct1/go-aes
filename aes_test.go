@@ -268,6 +268,184 @@ func BenchmarkInvRound(b *testing.B) {
 	}
 }
 
+func BenchmarkInvSubBytes(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvSubBytes(&block)
+	}
+}
+
+func BenchmarkInvShiftRows(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvShiftRows(&block)
+	}
+}
+
+func BenchmarkInvMixColumns(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvMixColumns(&block)
+	}
+}
+
+func BenchmarkAddRoundKey(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		AddRoundKey(&block, &key)
+	}
+}
+
+func BenchmarkFinalRound(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		FinalRound(&block, &key)
+	}
+}
+
+func BenchmarkInvFinalRound(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvFinalRound(&block, &key)
+	}
+}
+
+func BenchmarkRoundHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		RoundHW(&block, &key)
+	}
+}
+
+func BenchmarkInvRoundHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvRoundHW(&block, &key)
+	}
+}
+
+func BenchmarkFinalRoundHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		FinalRoundHW(&block, &key)
+	}
+}
+
+func BenchmarkInvFinalRoundHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvFinalRoundHW(&block, &key)
+	}
+}
+
+func BenchmarkRoundNoKey(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		RoundNoKey(&block)
+	}
+}
+
+func BenchmarkRoundNoKeyHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		RoundNoKeyHW(&block)
+	}
+}
+
+func BenchmarkInvRoundNoKey(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvRoundNoKey(&block)
+	}
+}
+
+func BenchmarkInvRoundNoKeyHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvRoundNoKeyHW(&block)
+	}
+}
+
+func BenchmarkRoundKeyFirst(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		RoundKeyFirst(&block, &key)
+	}
+}
+
+func BenchmarkRoundKeyFirstHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		RoundKeyFirstHW(&block, &key)
+	}
+}
+
+func BenchmarkNewKeySchedule128(b *testing.B) {
+	key := hexToBytes("2b7e151628aed2a6abf7158809cf4f3c")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewKeySchedule(key)
+	}
+}
+
+func BenchmarkNewKeySchedule192(b *testing.B) {
+	key := hexToBytes("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewKeySchedule(key)
+	}
+}
+
+func BenchmarkNewKeySchedule256(b *testing.B) {
+	key := hexToBytes("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewKeySchedule(key)
+	}
+}
+
+func BenchmarkInverseKeySchedule(b *testing.B) {
+	key := hexToBytes("2b7e151628aed2a6abf7158809cf4f3c")
+	ks, _ := NewKeySchedule(key)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InverseKeySchedule(ks)
+	}
+}
+
+func BenchmarkInvMixColumnsHW(b *testing.B) {
+	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InvMixColumnsHW(&block)
+	}
+}
+
 // TestKeyFirstVariants verifies that KeyFirst variants produce equivalent results
 func TestKeyFirstVariants(t *testing.T) {
 	// Test that RoundKeyFirst produces equivalent results to Round

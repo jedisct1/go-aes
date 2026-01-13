@@ -185,6 +185,7 @@ func BenchmarkKiasuEncrypt(b *testing.B) {
 
 	ctx, _ := NewKiasuContext(key)
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = ctx.KiasuEncrypt(block, tweak)
@@ -198,6 +199,7 @@ func BenchmarkKiasuDecrypt(b *testing.B) {
 
 	ctx, _ := NewKiasuContext(key)
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = ctx.KiasuDecrypt(block, tweak)
@@ -211,6 +213,7 @@ func BenchmarkKiasuEncryptHW(b *testing.B) {
 
 	ctx, _ := NewKiasuContext(key)
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = ctx.KiasuEncryptHW(block, tweak)
@@ -224,6 +227,7 @@ func BenchmarkKiasuDecryptHW(b *testing.B) {
 
 	ctx, _ := NewKiasuContext(key)
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = ctx.KiasuDecryptHW(block, tweak)
