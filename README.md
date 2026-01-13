@@ -23,24 +23,24 @@ package main
 
 import (
     "fmt"
-    "encoding/hex"
     aes "github.com/jedisct1/go-aes"
 )
 
 func main() {
     // Create a 128-bit block and round key
-    var block, key [16]byte
+    var block, key aes.Block
     copy(block[:], "Hello, World!...")
     copy(key[:], "SecretKey1234567")
 
-    // Perform one AES forward round
-    result := aes.Round(block, key)
-    fmt.Printf("After one round: %x\n", result)
+    // Perform one AES forward round (modifies block in place)
+    aes.Round(&block, &key)
+    fmt.Printf("After one round: %x\n", block)
 
     // Hardware acceleration is automatic if available
     if aes.CPU.HasAESNI || aes.CPU.HasARMCrypto {
-        result = aes.RoundHW(block, key)
-        fmt.Printf("Hardware result: %x\n", result)
+        copy(block[:], "Hello, World!...")
+        aes.RoundHW(&block, &key)
+        fmt.Printf("Hardware result: %x\n", block)
     }
 }
 ```
@@ -405,17 +405,20 @@ go test -bench=.
 
 ### Basic Round Functions
 
-- `Round(block, key [16]byte) [16]byte` - Forward round (ShiftRows, SubBytes, MixColumns, XOR key)
-- `InvRound(block, key [16]byte) [16]byte` - Inverse round
-- `RoundKeyFirst(block, key [16]byte) [16]byte` - Key XOR at beginning
-- `RoundNoKey(block [16]byte) [16]byte` - No key XOR
-- `RoundHW(block, key [16]byte) [16]byte` - Hardware-accelerated forward round
+- `Round(block *Block, key *Block)` - Forward round (ShiftRows, SubBytes, MixColumns, XOR key)
+- `InvRound(block *Block, key *Block)` - Inverse round
+- `FinalRound(block *Block, key *Block)` - Final round (no MixColumns)
+- `InvFinalRound(block *Block, key *Block)` - Inverse final round
+- `RoundKeyFirst(block *Block, key *Block)` - Key XOR at beginning
+- `RoundNoKey(block *Block)` - No key XOR
+- `RoundHW(block *Block, key *Block)` - Hardware-accelerated forward round
 
 ### Individual Transformations
 
-- `SubBytes(block [16]byte) [16]byte` - Apply S-box substitution
-- `ShiftRows(block [16]byte) [16]byte` - Rotate rows
-- `MixColumns(block [16]byte) [16]byte` - Mix column transformation
+- `SubBytes(block *Block)` - Apply S-box substitution
+- `ShiftRows(block *Block)` - Rotate rows
+- `MixColumns(block *Block)` - Mix column transformation
+- `AddRoundKey(block *Block, roundKey *Block)` - XOR block with round key
 - Inverse versions: `InvSubBytes()`, `InvShiftRows()`, `InvMixColumns()`
 
 ### Parallel Operations
@@ -493,9 +496,20 @@ go test -bench=.
 
 ### Key Expansion
 
-- `KeyExpansion128(key [16]byte) [176]byte` - Expand AES-128 key
-- `KeyExpansion192(key [24]byte) [208]byte` - Expand AES-192 key
-- `KeyExpansion256(key [32]byte) [240]byte` - Expand AES-256 key
+- `KeyExpansion128(key [16]byte) [176]byte` - Expand AES-128 key (raw bytes)
+- `KeyExpansion192(key [24]byte) [208]byte` - Expand AES-192 key (raw bytes)
+- `KeyExpansion256(key [32]byte) [240]byte` - Expand AES-256 key (raw bytes)
+- `NewKeySchedule(key []byte) (*KeySchedule, error)` - Create key schedule (16/24/32 byte keys)
+- `(*KeySchedule).GetRoundKey(round int) *Block` - Get specific round key
+- `(*KeySchedule).Rounds() int` - Get number of rounds (10/12/14)
+
+### Complete AES Encryption
+
+- `EncryptBlockAES128(block *Block, ks *KeySchedule)` - Full AES-128 encryption
+- `EncryptBlockAES192(block *Block, ks *KeySchedule)` - Full AES-192 encryption
+- `EncryptBlockAES256(block *Block, ks *KeySchedule)` - Full AES-256 encryption
+- `EncryptBlockAES(block *Block, ks *KeySchedule)` - Auto-select based on key schedule
+- `EncryptBlocksAES128/192/256(blocks []Block, ks *KeySchedule)` - Batch encryption
 
 ### CPU Detection
 
