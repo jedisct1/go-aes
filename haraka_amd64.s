@@ -1,0 +1,401 @@
+// Haraka v2 AES-NI hardware acceleration for AMD64
+#include "textflag.h"
+
+// Round constants address (exported from haraka.go)
+// harakaRC128 is [40][16]byte = 640 bytes total
+
+// func haraka256HW(out *[32]byte, input *[32]byte, rc *[40][16]byte)
+TEXT ·haraka256HW(SB),NOSPLIT,$0
+	MOVQ out+0(FP), DI
+	MOVQ input+8(FP), SI
+	MOVQ rc+16(FP), DX
+
+	// Load input blocks into XMM0 (s0) and XMM1 (s1)
+	MOVOU 0(SI), X0
+	MOVOU 16(SI), X1
+
+	// Save originals for feed-forward (XMM6, XMM7)
+	MOVO X0, X6
+	MOVO X1, X7
+
+	// Round 0 (rc[0..3])
+	MOVOU 0(DX), X2
+	AESENC X2, X0
+	MOVOU 16(DX), X2
+	AESENC X2, X1
+	MOVOU 32(DX), X2
+	AESENC X2, X0
+	MOVOU 48(DX), X2
+	AESENC X2, X1
+	// mix2: unpacklo/hi epi32
+	MOVO X0, X2
+	PUNPCKLLQ X1, X0    // X0 = [a0, b0, a1, b1]
+	PUNPCKHLQ X1, X2    // X2 = [a2, b2, a3, b3]
+	MOVO X2, X1
+
+	// Round 1 (rc[4..7])
+	MOVOU 64(DX), X2
+	AESENC X2, X0
+	MOVOU 80(DX), X2
+	AESENC X2, X1
+	MOVOU 96(DX), X2
+	AESENC X2, X0
+	MOVOU 112(DX), X2
+	AESENC X2, X1
+	// mix2
+	MOVO X0, X2
+	PUNPCKLLQ X1, X0
+	PUNPCKHLQ X1, X2
+	MOVO X2, X1
+
+	// Round 2 (rc[8..11])
+	MOVOU 128(DX), X2
+	AESENC X2, X0
+	MOVOU 144(DX), X2
+	AESENC X2, X1
+	MOVOU 160(DX), X2
+	AESENC X2, X0
+	MOVOU 176(DX), X2
+	AESENC X2, X1
+	// mix2
+	MOVO X0, X2
+	PUNPCKLLQ X1, X0
+	PUNPCKHLQ X1, X2
+	MOVO X2, X1
+
+	// Round 3 (rc[12..15])
+	MOVOU 192(DX), X2
+	AESENC X2, X0
+	MOVOU 208(DX), X2
+	AESENC X2, X1
+	MOVOU 224(DX), X2
+	AESENC X2, X0
+	MOVOU 240(DX), X2
+	AESENC X2, X1
+	// mix2
+	MOVO X0, X2
+	PUNPCKLLQ X1, X0
+	PUNPCKHLQ X1, X2
+	MOVO X2, X1
+
+	// Round 4 (rc[16..19])
+	MOVOU 256(DX), X2
+	AESENC X2, X0
+	MOVOU 272(DX), X2
+	AESENC X2, X1
+	MOVOU 288(DX), X2
+	AESENC X2, X0
+	MOVOU 304(DX), X2
+	AESENC X2, X1
+	// mix2
+	MOVO X0, X2
+	PUNPCKLLQ X1, X0
+	PUNPCKHLQ X1, X2
+	MOVO X2, X1
+
+	// Feed-forward XOR
+	PXOR X6, X0
+	PXOR X7, X1
+
+	// Store output
+	MOVOU X0, 0(DI)
+	MOVOU X1, 16(DI)
+	RET
+
+// func haraka512HW(out *[32]byte, input *[64]byte, rc *[40][16]byte)
+TEXT ·haraka512HW(SB),NOSPLIT,$0
+	MOVQ out+0(FP), DI
+	MOVQ input+8(FP), SI
+	MOVQ rc+16(FP), DX
+
+	// Load input blocks into XMM0-XMM3 (s0-s3)
+	MOVOU 0(SI), X0
+	MOVOU 16(SI), X1
+	MOVOU 32(SI), X2
+	MOVOU 48(SI), X3
+
+	// Save originals for feed-forward (XMM8-XMM11)
+	MOVO X0, X8
+	MOVO X1, X9
+	MOVO X2, X10
+	MOVO X3, X11
+
+	// Round 0 (rc[0..7])
+	MOVOU 0(DX), X4
+	AESENC X4, X0
+	MOVOU 16(DX), X4
+	AESENC X4, X1
+	MOVOU 32(DX), X4
+	AESENC X4, X2
+	MOVOU 48(DX), X4
+	AESENC X4, X3
+	MOVOU 64(DX), X4
+	AESENC X4, X0
+	MOVOU 80(DX), X4
+	AESENC X4, X1
+	MOVOU 96(DX), X4
+	AESENC X4, X2
+	MOVOU 112(DX), X4
+	AESENC X4, X3
+	// mix512: complex permutation of 32-bit words
+	// new[0]=old[3], new[1]=old[11], new[2]=old[7], new[3]=old[15]
+	// new[4]=old[8], new[5]=old[0], new[6]=old[12], new[7]=old[4]
+	// new[8]=old[9], new[9]=old[1], new[10]=old[13], new[11]=old[5]
+	// new[12]=old[2], new[13]=old[10], new[14]=old[6], new[15]=old[14]
+	// Save copies
+	MOVO X0, X4
+	MOVO X1, X5
+	MOVO X2, X6
+	MOVO X3, X7
+	// Build new X0: [old3, old11, old7, old15] = [s0[3], s2[3], s1[3], s3[3]]
+	PSHUFD $0xFF, X4, X0      // X0 = [s0[3], s0[3], s0[3], s0[3]]
+	PSHUFD $0xFF, X6, X12     // X12 = [s2[3], s2[3], s2[3], s2[3]]
+	PSHUFD $0xFF, X5, X13     // X13 = [s1[3], s1[3], s1[3], s1[3]]
+	PSHUFD $0xFF, X7, X14     // X14 = [s3[3], s3[3], s3[3], s3[3]]
+	PUNPCKLLQ X12, X0         // X0 = [s0[3], s2[3], ...]
+	PUNPCKLLQ X14, X13        // X13 = [s1[3], s3[3], ...]
+	PUNPCKLQDQ X13, X0        // X0 = [s0[3], s2[3], s1[3], s3[3]]
+	// Build new X1: [old8, old0, old12, old4] = [s2[0], s0[0], s3[0], s1[0]]
+	PSHUFD $0x00, X6, X1      // X1 = [s2[0], ...]
+	PSHUFD $0x00, X4, X12     // X12 = [s0[0], ...]
+	PSHUFD $0x00, X7, X13     // X13 = [s3[0], ...]
+	PSHUFD $0x00, X5, X14     // X14 = [s1[0], ...]
+	PUNPCKLLQ X12, X1         // X1 = [s2[0], s0[0], ...]
+	PUNPCKLLQ X14, X13        // X13 = [s3[0], s1[0], ...]
+	PUNPCKLQDQ X13, X1        // X1 = [s2[0], s0[0], s3[0], s1[0]]
+	// Build new X2: [old9, old1, old13, old5] = [s2[1], s0[1], s3[1], s1[1]]
+	PSHUFD $0x55, X6, X2      // X2 = [s2[1], ...]
+	PSHUFD $0x55, X4, X12     // X12 = [s0[1], ...]
+	PSHUFD $0x55, X7, X13     // X13 = [s3[1], ...]
+	PSHUFD $0x55, X5, X14     // X14 = [s1[1], ...]
+	PUNPCKLLQ X12, X2         // X2 = [s2[1], s0[1], ...]
+	PUNPCKLLQ X14, X13        // X13 = [s3[1], s1[1], ...]
+	PUNPCKLQDQ X13, X2        // X2 = [s2[1], s0[1], s3[1], s1[1]]
+	// Build new X3: [old2, old10, old6, old14] = [s0[2], s2[2], s1[2], s3[2]]
+	PSHUFD $0xAA, X4, X3      // X3 = [s0[2], ...]
+	PSHUFD $0xAA, X6, X12     // X12 = [s2[2], ...]
+	PSHUFD $0xAA, X5, X13     // X13 = [s1[2], ...]
+	PSHUFD $0xAA, X7, X14     // X14 = [s3[2], ...]
+	PUNPCKLLQ X12, X3         // X3 = [s0[2], s2[2], ...]
+	PUNPCKLLQ X14, X13        // X13 = [s1[2], s3[2], ...]
+	PUNPCKLQDQ X13, X3        // X3 = [s0[2], s2[2], s1[2], s3[2]]
+
+	// Round 1 (rc[8..15])
+	MOVOU 128(DX), X4
+	AESENC X4, X0
+	MOVOU 144(DX), X4
+	AESENC X4, X1
+	MOVOU 160(DX), X4
+	AESENC X4, X2
+	MOVOU 176(DX), X4
+	AESENC X4, X3
+	MOVOU 192(DX), X4
+	AESENC X4, X0
+	MOVOU 208(DX), X4
+	AESENC X4, X1
+	MOVOU 224(DX), X4
+	AESENC X4, X2
+	MOVOU 240(DX), X4
+	AESENC X4, X3
+	// mix512
+	MOVO X0, X4
+	MOVO X1, X5
+	MOVO X2, X6
+	MOVO X3, X7
+	PSHUFD $0xFF, X4, X0
+	PSHUFD $0xFF, X6, X12
+	PSHUFD $0xFF, X5, X13
+	PSHUFD $0xFF, X7, X14
+	PUNPCKLLQ X12, X0
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X0
+	PSHUFD $0x00, X6, X1
+	PSHUFD $0x00, X4, X12
+	PSHUFD $0x00, X7, X13
+	PSHUFD $0x00, X5, X14
+	PUNPCKLLQ X12, X1
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X1
+	PSHUFD $0x55, X6, X2
+	PSHUFD $0x55, X4, X12
+	PSHUFD $0x55, X7, X13
+	PSHUFD $0x55, X5, X14
+	PUNPCKLLQ X12, X2
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X2
+	PSHUFD $0xAA, X4, X3
+	PSHUFD $0xAA, X6, X12
+	PSHUFD $0xAA, X5, X13
+	PSHUFD $0xAA, X7, X14
+	PUNPCKLLQ X12, X3
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X3
+
+	// Round 2 (rc[16..23])
+	MOVOU 256(DX), X4
+	AESENC X4, X0
+	MOVOU 272(DX), X4
+	AESENC X4, X1
+	MOVOU 288(DX), X4
+	AESENC X4, X2
+	MOVOU 304(DX), X4
+	AESENC X4, X3
+	MOVOU 320(DX), X4
+	AESENC X4, X0
+	MOVOU 336(DX), X4
+	AESENC X4, X1
+	MOVOU 352(DX), X4
+	AESENC X4, X2
+	MOVOU 368(DX), X4
+	AESENC X4, X3
+	// mix512
+	MOVO X0, X4
+	MOVO X1, X5
+	MOVO X2, X6
+	MOVO X3, X7
+	PSHUFD $0xFF, X4, X0
+	PSHUFD $0xFF, X6, X12
+	PSHUFD $0xFF, X5, X13
+	PSHUFD $0xFF, X7, X14
+	PUNPCKLLQ X12, X0
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X0
+	PSHUFD $0x00, X6, X1
+	PSHUFD $0x00, X4, X12
+	PSHUFD $0x00, X7, X13
+	PSHUFD $0x00, X5, X14
+	PUNPCKLLQ X12, X1
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X1
+	PSHUFD $0x55, X6, X2
+	PSHUFD $0x55, X4, X12
+	PSHUFD $0x55, X7, X13
+	PSHUFD $0x55, X5, X14
+	PUNPCKLLQ X12, X2
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X2
+	PSHUFD $0xAA, X4, X3
+	PSHUFD $0xAA, X6, X12
+	PSHUFD $0xAA, X5, X13
+	PSHUFD $0xAA, X7, X14
+	PUNPCKLLQ X12, X3
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X3
+
+	// Round 3 (rc[24..31])
+	MOVOU 384(DX), X4
+	AESENC X4, X0
+	MOVOU 400(DX), X4
+	AESENC X4, X1
+	MOVOU 416(DX), X4
+	AESENC X4, X2
+	MOVOU 432(DX), X4
+	AESENC X4, X3
+	MOVOU 448(DX), X4
+	AESENC X4, X0
+	MOVOU 464(DX), X4
+	AESENC X4, X1
+	MOVOU 480(DX), X4
+	AESENC X4, X2
+	MOVOU 496(DX), X4
+	AESENC X4, X3
+	// mix512
+	MOVO X0, X4
+	MOVO X1, X5
+	MOVO X2, X6
+	MOVO X3, X7
+	PSHUFD $0xFF, X4, X0
+	PSHUFD $0xFF, X6, X12
+	PSHUFD $0xFF, X5, X13
+	PSHUFD $0xFF, X7, X14
+	PUNPCKLLQ X12, X0
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X0
+	PSHUFD $0x00, X6, X1
+	PSHUFD $0x00, X4, X12
+	PSHUFD $0x00, X7, X13
+	PSHUFD $0x00, X5, X14
+	PUNPCKLLQ X12, X1
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X1
+	PSHUFD $0x55, X6, X2
+	PSHUFD $0x55, X4, X12
+	PSHUFD $0x55, X7, X13
+	PSHUFD $0x55, X5, X14
+	PUNPCKLLQ X12, X2
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X2
+	PSHUFD $0xAA, X4, X3
+	PSHUFD $0xAA, X6, X12
+	PSHUFD $0xAA, X5, X13
+	PSHUFD $0xAA, X7, X14
+	PUNPCKLLQ X12, X3
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X3
+
+	// Round 4 (rc[32..39])
+	MOVOU 512(DX), X4
+	AESENC X4, X0
+	MOVOU 528(DX), X4
+	AESENC X4, X1
+	MOVOU 544(DX), X4
+	AESENC X4, X2
+	MOVOU 560(DX), X4
+	AESENC X4, X3
+	MOVOU 576(DX), X4
+	AESENC X4, X0
+	MOVOU 592(DX), X4
+	AESENC X4, X1
+	MOVOU 608(DX), X4
+	AESENC X4, X2
+	MOVOU 624(DX), X4
+	AESENC X4, X3
+	// mix512
+	MOVO X0, X4
+	MOVO X1, X5
+	MOVO X2, X6
+	MOVO X3, X7
+	PSHUFD $0xFF, X4, X0
+	PSHUFD $0xFF, X6, X12
+	PSHUFD $0xFF, X5, X13
+	PSHUFD $0xFF, X7, X14
+	PUNPCKLLQ X12, X0
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X0
+	PSHUFD $0x00, X6, X1
+	PSHUFD $0x00, X4, X12
+	PSHUFD $0x00, X7, X13
+	PSHUFD $0x00, X5, X14
+	PUNPCKLLQ X12, X1
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X1
+	PSHUFD $0x55, X6, X2
+	PSHUFD $0x55, X4, X12
+	PSHUFD $0x55, X7, X13
+	PSHUFD $0x55, X5, X14
+	PUNPCKLLQ X12, X2
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X2
+	PSHUFD $0xAA, X4, X3
+	PSHUFD $0xAA, X6, X12
+	PSHUFD $0xAA, X5, X13
+	PSHUFD $0xAA, X7, X14
+	PUNPCKLLQ X12, X3
+	PUNPCKLLQ X14, X13
+	PUNPCKLQDQ X13, X3
+
+	// Feed-forward XOR
+	PXOR X8, X0
+	PXOR X9, X1
+	PXOR X10, X2
+	PXOR X11, X3
+
+	// Truncated output: s0[8:16] || s1[8:16] || s2[0:8] || s3[0:8]
+	// That means: high qword of X0, high qword of X1, low qword of X2, low qword of X3
+	PSRLDQ $8, X0            // Shift right 8 bytes, X0 = [s0[8:16], 0]
+	PSRLDQ $8, X1            // X1 = [s1[8:16], 0]
+	PUNPCKLQDQ X1, X0        // X0 = [s0[8:16], s1[8:16]]
+	PUNPCKLQDQ X3, X2        // X2 = [s2[0:8], s3[0:8]]
+	MOVOU X0, 0(DI)
+	MOVOU X2, 16(DI)
+	RET

@@ -157,3 +157,86 @@ func BenchmarkHaraka512(b *testing.B) {
 		Haraka512(&input)
 	}
 }
+
+func TestHaraka256HW(t *testing.T) {
+	// Test vector from Appendix B of the Haraka v2 paper
+	var input [32]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	expected, _ := hex.DecodeString("8027ccb87949774b78d0545fb72bf70c695c2a0923cbd47bba1159efbf2b2c1c")
+	output := Haraka256HW(&input)
+
+	if string(output[:]) != string(expected) {
+		t.Errorf("Haraka256HW mismatch\nInput:    %x\nExpected: %x\nGot:      %x", input, expected, output)
+	}
+}
+
+func TestHaraka512HW(t *testing.T) {
+	// Test vector from Appendix B of the Haraka v2 paper
+	var input [64]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	expected, _ := hex.DecodeString("be7f723b4e80a99813b292287f306f625a6d57331cae5f34dd9277b0945be2aa")
+	output := Haraka512HW(&input)
+
+	if string(output[:]) != string(expected) {
+		t.Errorf("Haraka512HW mismatch\nInput:    %x\nExpected: %x\nGot:      %x", input, expected, output)
+	}
+}
+
+func TestHarakaHWMatchesSoftware(t *testing.T) {
+	// Test that HW and software implementations produce identical results
+	for i := 0; i < 100; i++ {
+		// Test Haraka-256
+		var input256 [32]byte
+		for j := range input256 {
+			input256[j] = byte(i*7 + j*13)
+		}
+		sw256 := Haraka256(&input256)
+		hw256 := Haraka256HW(&input256)
+		if sw256 != hw256 {
+			t.Errorf("Haraka256 HW/SW mismatch for input %d:\nSW: %x\nHW: %x", i, sw256, hw256)
+		}
+
+		// Test Haraka-512
+		var input512 [64]byte
+		for j := range input512 {
+			input512[j] = byte(i*11 + j*17)
+		}
+		sw512 := Haraka512(&input512)
+		hw512 := Haraka512HW(&input512)
+		if sw512 != hw512 {
+			t.Errorf("Haraka512 HW/SW mismatch for input %d:\nSW: %x\nHW: %x", i, sw512, hw512)
+		}
+	}
+}
+
+func BenchmarkHaraka256HW(b *testing.B) {
+	var input [32]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	b.SetBytes(32)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Haraka256HW(&input)
+	}
+}
+
+func BenchmarkHaraka512HW(b *testing.B) {
+	var input [64]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Haraka512HW(&input)
+	}
+}

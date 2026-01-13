@@ -1,6 +1,58 @@
 // Vistrutah hardware acceleration for ARM64 (ARM Crypto Extensions + NEON)
 #include "textflag.h"
 
+// P4 forward permutation: {9, 7, 13, 14, 0, 10, 3, 5, 1, 2, 15, 4, 6, 12, 11, 8}
+DATA p4_fwd<>+0x00(SB)/8, $0x05030a000e0d0709
+DATA p4_fwd<>+0x08(SB)/8, $0x080b0c06040f0201
+GLOBL p4_fwd<>(SB), RODATA|NOPTR, $16
+
+// P5 forward permutation: {12, 8, 1, 9, 15, 4, 0, 3, 14, 10, 6, 7, 2, 5, 13, 11}
+DATA p5_fwd<>+0x00(SB)/8, $0x0300040f0901080c
+DATA p5_fwd<>+0x08(SB)/8, $0x0b0d050207060a0e
+GLOBL p5_fwd<>(SB), RODATA|NOPTR, $16
+
+// Mixing layer index tables for Vistrutah-512 TBL4
+// MixIdx0: {0, 16, 32, 48, 1, 17, 33, 49, 2, 18, 34, 50, 3, 19, 35, 51}
+DATA mix_idx0<>+0x00(SB)/8, $0x3121110130201000
+DATA mix_idx0<>+0x08(SB)/8, $0x3323130332221202
+GLOBL mix_idx0<>(SB), RODATA|NOPTR, $16
+
+// MixIdx1: {8, 24, 40, 56, 9, 25, 41, 57, 10, 26, 42, 58, 11, 27, 43, 59}
+DATA mix_idx1<>+0x00(SB)/8, $0x3929190938281808
+DATA mix_idx1<>+0x08(SB)/8, $0x3b2b1b0b3a2a1a0a
+GLOBL mix_idx1<>(SB), RODATA|NOPTR, $16
+
+// MixIdx2: {4, 20, 36, 52, 5, 21, 37, 53, 6, 22, 38, 54, 7, 23, 39, 55}
+DATA mix_idx2<>+0x00(SB)/8, $0x3525150534241404
+DATA mix_idx2<>+0x08(SB)/8, $0x3727170736261606
+GLOBL mix_idx2<>(SB), RODATA|NOPTR, $16
+
+// MixIdx3: {12, 28, 44, 60, 13, 29, 45, 61, 14, 30, 46, 62, 15, 31, 47, 63}
+DATA mix_idx3<>+0x00(SB)/8, $0x3d2d1d0d3c2c1c0c
+DATA mix_idx3<>+0x08(SB)/8, $0x3f2f1f0f3e2e1e0e
+GLOBL mix_idx3<>(SB), RODATA|NOPTR, $16
+
+// Inverse mixing layer index tables for Vistrutah-512
+// InvMixIdx0: {0, 4, 8, 12, 32, 36, 40, 44, 16, 20, 24, 28, 48, 52, 56, 60}
+DATA inv_mix_idx0<>+0x00(SB)/8, $0x2c2824200c080400
+DATA inv_mix_idx0<>+0x08(SB)/8, $0x3c3834301c181410
+GLOBL inv_mix_idx0<>(SB), RODATA|NOPTR, $16
+
+// InvMixIdx1: {1, 5, 9, 13, 33, 37, 41, 45, 17, 21, 25, 29, 49, 53, 57, 61}
+DATA inv_mix_idx1<>+0x00(SB)/8, $0x2d2925210d090501
+DATA inv_mix_idx1<>+0x08(SB)/8, $0x3d3935311d191511
+GLOBL inv_mix_idx1<>(SB), RODATA|NOPTR, $16
+
+// InvMixIdx2: {2, 6, 10, 14, 34, 38, 42, 46, 18, 22, 26, 30, 50, 54, 58, 62}
+DATA inv_mix_idx2<>+0x00(SB)/8, $0x2e2a26220e0a0602
+DATA inv_mix_idx2<>+0x08(SB)/8, $0x3e3a36321e1a1612
+GLOBL inv_mix_idx2<>(SB), RODATA|NOPTR, $16
+
+// InvMixIdx3: {3, 7, 11, 15, 35, 39, 43, 47, 19, 23, 27, 31, 51, 55, 59, 63}
+DATA inv_mix_idx3<>+0x00(SB)/8, $0x2f2b27230f0b0703
+DATA inv_mix_idx3<>+0x08(SB)/8, $0x3f3b37331f1b1713
+GLOBL inv_mix_idx3<>(SB), RODATA|NOPTR, $16
+
 // func vistrutah256EncryptAsm(plaintext, ciphertext, key *byte, keySize, rounds int, roundConstants, p4, p5 *byte)
 TEXT ·vistrutah256EncryptAsm(SB), NOSPLIT, $80-64
 	MOVD plaintext+0(FP), R0
@@ -81,8 +133,8 @@ loop_arm:
 	// Mixing layer 256 using VUZP1/VUZP2:
 	// s0, s1 = vuzp1(s0, s1), vuzp2(s0, s1)
 	VMOV V0.B16, V2.B16      // save s0
-	VUZP1 V1.B8, V0.B8, V0.B8   // s0 = evens interleaved
-	VUZP2 V1.B8, V2.B8, V1.B8   // s1 = odds interleaved
+	VUZP1 V1.B16, V0.B16, V0.B16   // s0 = evens interleaved
+	VUZP2 V1.B16, V2.B16, V1.B16   // s1 = odds interleaved
 
 	// Apply permutations to round_key
 	ADD $32, RSP, R8
@@ -180,10 +232,10 @@ dec_key_done_arm:
 	// steps = rounds / 2
 	LSR $1, R4, R9
 
-	// Load forward P4/P5 from global symbols for key schedule advancement
-	MOVD $·vistrutahP4(SB), R11
+	// Load forward P4/P5 permutation tables for key schedule advancement
+	MOVD $p4_fwd<>(SB), R11
 	VLD1 (R11), [V26.B16]    // Forward P4
-	MOVD $·vistrutahP5(SB), R11
+	MOVD $p5_fwd<>(SB), R11
 	VLD1 (R11), [V27.B16]    // Forward P5
 
 	// Advance round_key forward 'steps' times
@@ -251,8 +303,8 @@ dec_loop_arm:
 	// Inverse mixing layer 256 using VZIP1/VZIP2:
 	// s0, s1 = vzip1(s0, s1), vzip2(s0, s1)
 	VMOV V0.B16, V2.B16
-	VZIP1 V1.B8, V0.B8, V0.B8
-	VZIP2 V1.B8, V2.B8, V1.B8
+	VZIP1 V1.B16, V0.B16, V0.B16
+	VZIP2 V1.B16, V2.B16, V1.B16
 
 	// AESIMC on states
 	AESIMC V0.B16, V0.B16
@@ -410,28 +462,15 @@ enc512_loop_arm:
 	AESE V31.B16, V3.B16
 	AESMC V3.B16, V3.B16
 
-	// Mixing layer 512 using TBL4
-	// The mixing layer performs a 4x4 byte transpose
-	// We use precomputed index tables
-
-	// Index tables for mixing layer (hard-coded)
-	// idx0: {0,16,32,48, 1,17,33,49, 2,18,34,50, 3,19,35,51}
-	// idx1: {8,24,40,56, 9,25,41,57, 10,26,42,58, 11,27,43,59}
-	// idx2: {4,20,36,52, 5,21,37,53, 6,22,38,54, 7,23,39,55}
-	// idx3: {12,28,44,60, 13,29,45,61, 14,30,46,62, 15,31,47,63}
-
-	// Load mixing indices (we'll hard-code them with VMOV or use stack)
-	// For efficiency, store on stack once at function start
-	// For now, we'll use Go global data
-
-	// Access mixing layer index tables from Go globals
-	MOVD $·vistrutah512MixIdx0(SB), R11
+	// Mixing layer 512 using TBL4 (4x4 byte transpose)
+	// Load mixing layer index tables from assembly data section
+	MOVD $mix_idx0<>(SB), R11
 	VLD1 (R11), [V24.B16]
-	MOVD $·vistrutah512MixIdx1(SB), R11
+	MOVD $mix_idx1<>(SB), R11
 	VLD1 (R11), [V25.B16]
-	MOVD $·vistrutah512MixIdx2(SB), R11
+	MOVD $mix_idx2<>(SB), R11
 	VLD1 (R11), [V26.B16]
-	MOVD $·vistrutah512MixIdx3(SB), R11
+	MOVD $mix_idx3<>(SB), R11
 	VLD1 (R11), [V27.B16]
 
 	// Apply TBL4 with V0-V3 as source table
@@ -623,14 +662,14 @@ dec512_advance_done_arm:
 	AESIMC V3.B16, V3.B16
 	VEOR V15.B16, V3.B16, V3.B16
 
-	// Load inverse mixing indices
-	MOVD $·vistrutah512InvMixIdx0(SB), R11
+	// Load inverse mixing layer index tables from assembly data section
+	MOVD $inv_mix_idx0<>(SB), R11
 	VLD1 (R11), [V24.B16]
-	MOVD $·vistrutah512InvMixIdx1(SB), R11
+	MOVD $inv_mix_idx1<>(SB), R11
 	VLD1 (R11), [V25.B16]
-	MOVD $·vistrutah512InvMixIdx2(SB), R11
+	MOVD $inv_mix_idx2<>(SB), R11
 	VLD1 (R11), [V26.B16]
-	MOVD $·vistrutah512InvMixIdx3(SB), R11
+	MOVD $inv_mix_idx3<>(SB), R11
 	VLD1 (R11), [V27.B16]
 
 	// Loop
