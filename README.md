@@ -422,16 +422,16 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 
 ### Constructions
 
-| Construction  | Key Functions                                                                  |
-| ------------- | ------------------------------------------------------------------------------ |
-| Areion        | `Areion256`, `Areion512`, `InvAreion256`, `InvAreion512`                       |
-| AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                                   |
-| Haraka        | `Haraka256`, `Haraka512`, `Haraka256ToBlock`, `Haraka512ToBlock`               |
-| KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                              |
-| Deoxys-BC-256 | `NewDeoxysBC256`, `DeoxysBC256Encrypt`, `DeoxysBC256Decrypt`                   |
-| ButterKnife   | `ButterKnife`, `NewButterKnifeContext`, `(*ButterKnifeContext).Eval`           |
-| Pholkos       | `NewPholkos256Context`, `NewPholkos512Context`, `Pholkos256Encrypt/Decrypt`    |
-| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`                   |
+| Construction  | Key Functions                                                               |
+| ------------- | --------------------------------------------------------------------------- |
+| Areion        | `Areion256`, `Areion512`, `InvAreion256`, `InvAreion512`                    |
+| AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                                |
+| Haraka        | `Haraka256`, `Haraka512`, `Haraka256ToBlock`, `Haraka512ToBlock`            |
+| KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                           |
+| Deoxys-BC-256 | `NewDeoxysBC256`, `DeoxysBC256Encrypt`, `DeoxysBC256Decrypt`                |
+| ButterKnife   | `ButterKnife`, `NewButterKnifeContext`, `(*ButterKnifeContext).Eval`        |
+| Pholkos       | `NewPholkos256Context`, `NewPholkos512Context`, `Pholkos256Encrypt/Decrypt` |
+| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`                |
 
 ### Skye KDF (examples/skye)
 
