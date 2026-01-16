@@ -214,6 +214,7 @@ func BenchmarkAreion256Permute(b *testing.B) {
 		state[i] = byte(i)
 	}
 
+	b.SetBytes(32)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state.Permute()
@@ -226,6 +227,7 @@ func BenchmarkAreion256InversePermute(b *testing.B) {
 		state[i] = byte(i)
 	}
 
+	b.SetBytes(32)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state.InversePermute()
@@ -238,6 +240,7 @@ func BenchmarkAreion512Permute(b *testing.B) {
 		state[i] = byte(i)
 	}
 
+	b.SetBytes(64)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state.Permute()
@@ -250,6 +253,7 @@ func BenchmarkAreion512InversePermute(b *testing.B) {
 		state[i] = byte(i)
 	}
 
+	b.SetBytes(64)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state.InversePermute()

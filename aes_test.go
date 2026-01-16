@@ -228,6 +228,7 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 // Benchmark individual operations
 func BenchmarkSubBytes(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		SubBytes(&block)
@@ -236,6 +237,7 @@ func BenchmarkSubBytes(b *testing.B) {
 
 func BenchmarkShiftRows(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ShiftRows(&block)
@@ -244,6 +246,7 @@ func BenchmarkShiftRows(b *testing.B) {
 
 func BenchmarkMixColumns(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		MixColumns(&block)
@@ -253,6 +256,7 @@ func BenchmarkMixColumns(b *testing.B) {
 func BenchmarkRound(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Round(&block, &key)
@@ -262,6 +266,7 @@ func BenchmarkRound(b *testing.B) {
 func BenchmarkInvRound(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRound(&block, &key)
@@ -270,6 +275,7 @@ func BenchmarkInvRound(b *testing.B) {
 
 func BenchmarkInvSubBytes(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvSubBytes(&block)
@@ -278,6 +284,7 @@ func BenchmarkInvSubBytes(b *testing.B) {
 
 func BenchmarkInvShiftRows(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvShiftRows(&block)
@@ -286,6 +293,7 @@ func BenchmarkInvShiftRows(b *testing.B) {
 
 func BenchmarkInvMixColumns(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvMixColumns(&block)
@@ -295,6 +303,7 @@ func BenchmarkInvMixColumns(b *testing.B) {
 func BenchmarkAddRoundKey(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		AddRoundKey(&block, &key)
@@ -304,6 +313,7 @@ func BenchmarkAddRoundKey(b *testing.B) {
 func BenchmarkFinalRound(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		FinalRound(&block, &key)
@@ -313,6 +323,7 @@ func BenchmarkFinalRound(b *testing.B) {
 func BenchmarkInvFinalRound(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvFinalRound(&block, &key)
@@ -322,6 +333,7 @@ func BenchmarkInvFinalRound(b *testing.B) {
 func BenchmarkRoundHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundHW(&block, &key)
@@ -331,6 +343,7 @@ func BenchmarkRoundHW(b *testing.B) {
 func BenchmarkInvRoundHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRoundHW(&block, &key)
@@ -340,6 +353,7 @@ func BenchmarkInvRoundHW(b *testing.B) {
 func BenchmarkFinalRoundHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		FinalRoundHW(&block, &key)
@@ -349,6 +363,7 @@ func BenchmarkFinalRoundHW(b *testing.B) {
 func BenchmarkInvFinalRoundHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvFinalRoundHW(&block, &key)
@@ -357,6 +372,7 @@ func BenchmarkInvFinalRoundHW(b *testing.B) {
 
 func BenchmarkRoundNoKey(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundNoKey(&block)
@@ -365,6 +381,7 @@ func BenchmarkRoundNoKey(b *testing.B) {
 
 func BenchmarkRoundNoKeyHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundNoKeyHW(&block)
@@ -373,6 +390,7 @@ func BenchmarkRoundNoKeyHW(b *testing.B) {
 
 func BenchmarkInvRoundNoKey(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRoundNoKey(&block)
@@ -381,6 +399,7 @@ func BenchmarkInvRoundNoKey(b *testing.B) {
 
 func BenchmarkInvRoundNoKeyHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvRoundNoKeyHW(&block)
@@ -390,6 +409,7 @@ func BenchmarkInvRoundNoKeyHW(b *testing.B) {
 func BenchmarkRoundKeyFirst(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundKeyFirst(&block, &key)
@@ -399,6 +419,7 @@ func BenchmarkRoundKeyFirst(b *testing.B) {
 func BenchmarkRoundKeyFirstHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
 	key := bytesToBlock(hexToBytes("000102030405060708090a0b0c0d0e0f"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RoundKeyFirstHW(&block, &key)
@@ -440,6 +461,7 @@ func BenchmarkInverseKeySchedule(b *testing.B) {
 
 func BenchmarkInvMixColumnsHW(b *testing.B) {
 	block := bytesToBlock(hexToBytes("00112233445566778899aabbccddeeff"))
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		InvMixColumnsHW(&block)

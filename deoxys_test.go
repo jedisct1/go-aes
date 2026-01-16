@@ -357,6 +357,7 @@ func BenchmarkDeoxysRound(b *testing.B) {
 		state[i] = byte(i)
 	}
 
+	b.SetBytes(16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DeoxysRound(&state, rtk, 0, 0)

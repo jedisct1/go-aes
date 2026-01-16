@@ -453,6 +453,7 @@ func BenchmarkDExtLsb3(b *testing.B) {
 
 	samples := [][]byte{sample1, sample2, sample3}
 
+	b.SetBytes(3 * 32) // 3 samples of 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DExtLsb(samples)
@@ -474,6 +475,7 @@ func BenchmarkDExtLsb4(b *testing.B) {
 
 	samples := [][]byte{sample1, sample2, sample3, sample4}
 
+	b.SetBytes(4 * 32) // 4 samples of 32 bytes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DExtLsb(samples)
@@ -491,6 +493,7 @@ func BenchmarkFExp32(b *testing.B) {
 		info[i] = byte(i + 16)
 	}
 
+	b.SetBytes(32)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		FExp(&key, &info, 32)
@@ -508,6 +511,7 @@ func BenchmarkFExp128(b *testing.B) {
 		info[i] = byte(i + 16)
 	}
 
+	b.SetBytes(128)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		FExp(&key, &info, 128)
@@ -525,6 +529,7 @@ func BenchmarkFExp1024(b *testing.B) {
 		info[i] = byte(i + 16)
 	}
 
+	b.SetBytes(1024)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		FExp(&key, &info, 1024)
@@ -549,6 +554,7 @@ func BenchmarkSkye32(b *testing.B) {
 		info[i] = byte(i + 128)
 	}
 
+	b.SetBytes(32)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Skye(samples, &info, 32)
@@ -573,6 +579,7 @@ func BenchmarkSkye128(b *testing.B) {
 		info[i] = byte(i + 128)
 	}
 
+	b.SetBytes(128)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Skye(samples, &info, 128)
@@ -597,6 +604,7 @@ func BenchmarkSkyeContext(b *testing.B) {
 		info[i] = byte(i + 128)
 	}
 
+	b.SetBytes(32)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx.Expand(&info, 32)
