@@ -25,6 +25,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [Pholkos Tweakable Block Cipher](#pholkos-tweakable-block-cipher)
     - [Vistrutah Large-Block Cipher](#vistrutah-large-block-cipher)
   - [Examples](#examples)
+    - [Cymric](#cymric)
     - [LeMac](#lemac)
     - [Skye KDF](#skye-kdf)
   - [Performance](#performance)
@@ -330,6 +331,36 @@ Round options:
 Reference: ePrint 2024/1534
 
 ## Examples
+
+### Cymric
+
+Lightweight authenticated encryption (AEAD) using two AES-128 keys. Located in `examples/cymric/`.
+
+Two variants:
+- Cymric1: |msg| + |nonce| <= 16, |nonce| + |ad| <= 15
+- Cymric2: |msg| <= 16, |nonce| + |ad| <= 15
+
+```go
+import "github.com/jedisct1/go-aes/examples/cymric"
+
+var key [32]byte
+copy(key[:], keyBytes)
+ctx := cymric.NewContext(&key)
+
+// Encrypt
+nonce := make([]byte, 12)
+msg := []byte("Hi!")
+ad := []byte("v1")
+ctext := make([]byte, len(msg))
+var tag [16]byte
+ctx.Cymric1Encrypt(ctext, &tag, msg, ad, nonce)
+
+// Decrypt
+ptext := make([]byte, len(ctext))
+err := ctx.Cymric1Decrypt(ptext, ctext, &tag, ad, nonce)
+```
+
+Features: 256-bit key, 128-bit tag, constant-time verification, zero allocations.
 
 ### LeMac
 
