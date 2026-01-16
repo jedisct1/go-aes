@@ -1,8 +1,7 @@
 // Package cymric implements Cymric1 and Cymric2 lightweight authenticated encryption.
 //
 // Cymric is an AEAD scheme using two independent AES-128 keys, designed for
-// short messages with minimal overhead. It provides 128-bit authentication tags
-// with constant-time verification.
+// short messages with minimal overhead. It provides 128-bit authentication tags.
 //
 // Two variants are provided:
 //   - Cymric1: |msg| + |nonce| <= 16, |nonce| + |ad| <= 15
@@ -192,7 +191,6 @@ func (ctx *Context) Cymric1Decrypt(out []byte, cipher []byte, tag *[TagBytes]byt
 	aes.XorBlock(&block, &block, &y0)
 	encrypt(&block, &ctx.key0_2, &ctx.keys2)
 
-	// Verify tag using constant-time comparison
 	if subtle.ConstantTimeCompare(block[:], tag[:]) != 1 {
 		// Zero output on failure
 		for i := range len(cipher) {
@@ -331,7 +329,6 @@ func (ctx *Context) Cymric2Decrypt(out []byte, cipher []byte, tag *[TagBytes]byt
 	aes.XorBlock(&block, &block, &y0)
 	encrypt(&block, &ctx.key0_2, &ctx.keys2)
 
-	// Verify tag using constant-time comparison
 	if subtle.ConstantTimeCompare(block[:], tag[:]) != 1 {
 		// Zero output on failure
 		for i := range len(cipher) {
