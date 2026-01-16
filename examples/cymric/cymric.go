@@ -32,10 +32,10 @@ var (
 // Context holds the round keys for Cymric authenticated encryption.
 // It uses two independent AES-128 key schedules with pre-computed round key arrays.
 type Context struct {
-	key0_1 aes.Block        // Initial key for ks1
-	key0_2 aes.Block        // Initial key for ks2
-	keys1  aes.RoundKeys10  // Pre-computed round keys 1-10 for ks1
-	keys2  aes.RoundKeys10  // Pre-computed round keys 1-10 for ks2
+	key0_1 aes.Block       // Initial key for ks1
+	key0_2 aes.Block       // Initial key for ks2
+	keys1  aes.RoundKeys10 // Pre-computed round keys 1-10 for ks1
+	keys2  aes.RoundKeys10 // Pre-computed round keys 1-10 for ks2
 }
 
 // NewContext creates a new Cymric context from a 32-byte key.

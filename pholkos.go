@@ -80,7 +80,6 @@ func applyTau(state *Block) {
 	*state = temp
 }
 
-
 // gfDouble multiplies a byte by 2 in GF(2^8) with the AES polynomial.
 func gfDouble(b byte) byte {
 	return gfMul2(b)

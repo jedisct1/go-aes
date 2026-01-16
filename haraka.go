@@ -92,7 +92,8 @@ func mix2(s0, s1 *Block) {
 // mix512 performs the MIX512 permutation for Haraka-512.
 // From the reference implementation:
 // s[0..15] = s[3], s[11], s[7], s[15], s[8], s[0], s[12], s[4],
-//            s[9], s[1], s[13], s[5], s[2], s[10], s[6], s[14]
+//
+//	s[9], s[1], s[13], s[5], s[2], s[10], s[6], s[14]
 func mix512(s0, s1, s2, s3 *Block) {
 	// Read all 32-bit values (state as 16 dwords)
 	// s0 = state[0:4], s1 = state[4:8], s2 = state[8:12], s3 = state[12:16]
