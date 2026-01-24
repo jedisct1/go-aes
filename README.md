@@ -28,6 +28,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [Cymric](#cymric)
     - [LeMac](#lemac)
     - [Skye KDF](#skye-kdf)
+    - [MacaKey](#macakey)
   - [Performance](#performance)
   - [API Reference](#api-reference)
     - [Round Functions](#round-functions)
@@ -399,6 +400,31 @@ key2 := ctx.Expand(&info2, 32)
 ```
 
 Reference: ePrint 2024/781
+
+### MacaKey
+
+Full-state keyed sponge PRF/MAC using Areion512. Located in `examples/macakey/`.
+
+```go
+import "github.com/jedisct1/go-aes/examples/macakey"
+
+var key [32]byte
+copy(key[:], keyBytes)
+
+// One-shot MAC
+mac, _ := macakey.Macakey(key[:], message, 32)
+
+// Streaming
+ctx, _ := macakey.NewMacakeyContext(key[:])
+ctx.Write(chunk1)
+ctx.Write(chunk2)
+mac := ctx.Sum(32)
+
+// With explicit IV (32 bytes)
+mac, _ := macakey.MacakeyWithIV(key[:], iv, message, 32)
+```
+
+Based on MacaKey V2 with NCP-based domain separation. Provides 128-bit security.
 
 ## Performance
 
