@@ -232,6 +232,62 @@ func areion512InversePermuteSoftware(state *Areion512) {
 	}
 }
 
+// Areion256EM encrypts a 32-byte block using the single-key Even-Mansour construction
+// with the Areion256 permutation: E_k(m) = P(m ⊕ k) ⊕ k.
+func Areion256EM(key *[32]byte, block *[32]byte) [32]byte {
+	var state Areion256
+	for i := range state {
+		state[i] = block[i] ^ key[i]
+	}
+	state.Permute()
+	for i := range state {
+		state[i] ^= key[i]
+	}
+	return [32]byte(state)
+}
+
+// Areion256EMDecrypt decrypts a 32-byte block using the single-key Even-Mansour construction
+// with the Areion256 inverse permutation: D_k(c) = P^{-1}(c ⊕ k) ⊕ k.
+func Areion256EMDecrypt(key *[32]byte, block *[32]byte) [32]byte {
+	var state Areion256
+	for i := range state {
+		state[i] = block[i] ^ key[i]
+	}
+	state.InversePermute()
+	for i := range state {
+		state[i] ^= key[i]
+	}
+	return [32]byte(state)
+}
+
+// Areion512EM encrypts a 64-byte block using the single-key Even-Mansour construction
+// with the Areion512 permutation: E_k(m) = P(m ⊕ k) ⊕ k.
+func Areion512EM(key *[64]byte, block *[64]byte) [64]byte {
+	var state Areion512
+	for i := range state {
+		state[i] = block[i] ^ key[i]
+	}
+	state.Permute()
+	for i := range state {
+		state[i] ^= key[i]
+	}
+	return [64]byte(state)
+}
+
+// Areion512EMDecrypt decrypts a 64-byte block using the single-key Even-Mansour construction
+// with the Areion512 inverse permutation: D_k(c) = P^{-1}(c ⊕ k) ⊕ k.
+func Areion512EMDecrypt(key *[64]byte, block *[64]byte) [64]byte {
+	var state Areion512
+	for i := range state {
+		state[i] = block[i] ^ key[i]
+	}
+	state.InversePermute()
+	for i := range state {
+		state[i] ^= key[i]
+	}
+	return [64]byte(state)
+}
+
 // Areion256DM computes the Areion256-DM short fixed-input hash of a 32-byte input.
 // It applies the Davies-Meyer construction: h = P(m) XOR m, returning the full
 // 32-byte result as the digest.

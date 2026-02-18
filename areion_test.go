@@ -248,7 +248,146 @@ func TestAreion512DM(t *testing.T) {
 	}
 }
 
+// Even-Mansour tests
+
+func TestAreion256EMRoundtrip(t *testing.T) {
+	var key [32]byte
+	var plaintext [32]byte
+	for i := range key {
+		key[i] = byte(i * 3)
+	}
+	for i := range plaintext {
+		plaintext[i] = byte(i * 7)
+	}
+
+	ciphertext := Areion256EM(&key, &plaintext)
+	if bytes.Equal(ciphertext[:], plaintext[:]) {
+		t.Error("ciphertext should differ from plaintext")
+	}
+
+	decrypted := Areion256EMDecrypt(&key, &ciphertext)
+	if !bytes.Equal(decrypted[:], plaintext[:]) {
+		t.Errorf("Areion256EM roundtrip failed\nPlaintext:  %x\nDecrypted:  %x", plaintext[:], decrypted[:])
+	}
+}
+
+func TestAreion512EMRoundtrip(t *testing.T) {
+	var key [64]byte
+	var plaintext [64]byte
+	for i := range key {
+		key[i] = byte(i * 3)
+	}
+	for i := range plaintext {
+		plaintext[i] = byte(i * 7)
+	}
+
+	ciphertext := Areion512EM(&key, &plaintext)
+	if bytes.Equal(ciphertext[:], plaintext[:]) {
+		t.Error("ciphertext should differ from plaintext")
+	}
+
+	decrypted := Areion512EMDecrypt(&key, &ciphertext)
+	if !bytes.Equal(decrypted[:], plaintext[:]) {
+		t.Errorf("Areion512EM roundtrip failed\nPlaintext:  %x\nDecrypted:  %x", plaintext[:], decrypted[:])
+	}
+}
+
+func TestAreion256EMZeroKey(t *testing.T) {
+	var key [32]byte
+	var plaintext [32]byte
+	for i := range plaintext {
+		plaintext[i] = byte(i)
+	}
+
+	// With zero key, EM reduces to just the permutation
+	ciphertext := Areion256EM(&key, &plaintext)
+
+	var state Areion256
+	copy(state[:], plaintext[:])
+	state.Permute()
+
+	if !bytes.Equal(ciphertext[:], state[:]) {
+		t.Errorf("Areion256EM with zero key should equal bare permutation\nEM:   %x\nPerm: %x", ciphertext[:], state[:])
+	}
+}
+
+func TestAreion512EMZeroKey(t *testing.T) {
+	var key [64]byte
+	var plaintext [64]byte
+	for i := range plaintext {
+		plaintext[i] = byte(i)
+	}
+
+	ciphertext := Areion512EM(&key, &plaintext)
+
+	var state Areion512
+	copy(state[:], plaintext[:])
+	state.Permute()
+
+	if !bytes.Equal(ciphertext[:], state[:]) {
+		t.Errorf("Areion512EM with zero key should equal bare permutation\nEM:   %x\nPerm: %x", ciphertext[:], state[:])
+	}
+}
+
+func TestAreion256EMKnownAnswer(t *testing.T) {
+	var key [32]byte
+	var plaintext [32]byte
+
+	// Generate a known-answer test vector
+	ciphertext := Areion256EM(&key, &plaintext)
+	expected, _ := hex.DecodeString("2812a72465b26e9fca7583f6e4123aa1490e35e7d5203e4ba2e927b0482f4db8")
+	if !bytes.Equal(ciphertext[:], expected) {
+		t.Errorf("Areion256EM(zeros) failed\nGot:      %x\nExpected: %x", ciphertext[:], expected)
+	}
+}
+
+func TestAreion512EMKnownAnswer(t *testing.T) {
+	var key [64]byte
+	var plaintext [64]byte
+
+	ciphertext := Areion512EM(&key, &plaintext)
+	expected, _ := hex.DecodeString("b2adb04fa91f901559367122cb3c96a978cf3ee4b73c6a543fe6dc85779102e7e3f5501016ceed1dd2c48d0bc212fb07ad168794bd96cff35909cdd8e2274928")
+	if !bytes.Equal(ciphertext[:], expected) {
+		t.Errorf("Areion512EM(zeros) failed\nGot:      %x\nExpected: %x", ciphertext[:], expected)
+	}
+}
+
 // Benchmarks
+
+func BenchmarkAreion256EM(b *testing.B) {
+	var key [32]byte
+	var block [32]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range block {
+		block[i] = byte(i + 32)
+	}
+
+	b.SetBytes(32)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Areion256EM(&key, &block)
+	}
+}
+
+func BenchmarkAreion512EM(b *testing.B) {
+	var key [64]byte
+	var block [64]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range block {
+		block[i] = byte(i + 64)
+	}
+
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Areion512EM(&key, &block)
+	}
+}
+
 func BenchmarkAreion256DM(b *testing.B) {
 	var input [32]byte
 	for i := range input {
