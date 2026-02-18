@@ -48,6 +48,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
 - Parallel block processing: Process 2 or 4 blocks simultaneously with VAES/AVX2/AVX512
 - Multi-round functions: Optimized 4/6/7/10/12/14 round operations
 - Wide-block permutations: Areion256 (32-byte) and Areion512 (64-byte)
+- Short fixed-input hashing: Areion256-DM and Areion512-DM (Davies-Meyer construction)
 - AES-based hashing: Haraka v2 (256-bit and 512-bit input variants)
 - Tweakable block ciphers: KIASU-BC, Deoxys-BC-256, Pholkos (256-bit and 512-bit)
 - Large-block ciphers: Vistrutah-256 and Vistrutah-512
@@ -169,16 +170,30 @@ Wide-block cryptographic permutations built using AES rounds, useful for hash fu
 - Areion512: 64-byte state, 15 rounds
 
 ```go
-var state [32]byte
+var state aes.Areion256
 copy(state[:], yourData)
-result := aes.Areion256(state)
+state.Permute()
+
+// Inverse permutation
+state.InversePermute()
 
 // 512-bit variant
-var largeState [64]byte
-result512 := aes.Areion512(largeState)
+var largeState aes.Areion512
+largeState.Permute()
 ```
 
-Inverse permutations available via `InvAreion256()` and `InvAreion512()`.
+**Areion-DM**: Short fixed-input hash functions using the Davies-Meyer construction (h = P(m) XOR m).
+
+- Areion256-DM: 32-byte input, 32-byte output
+- Areion512-DM: 64-byte input, 32-byte output (truncated)
+
+```go
+var input32 [32]byte
+hash256 := aes.Areion256DM(&input32)   // [32]byte
+
+var input64 [64]byte
+hash512 := aes.Areion512DM(&input64)   // [32]byte
+```
 
 ### AES-PRF
 
@@ -269,6 +284,7 @@ Reference: ePrint 2021/1534
 Large-state tweakable block cipher family based on AES rounds, designed for high security and high performance. Follows the design strategy of Haraka and AESQ with two-round steps.
 
 Variants:
+
 - Pholkos-256-256: 256-bit block, 256-bit key, 128-bit tweak, 8 steps
 - Pholkos-512-256: 512-bit block, 256-bit key, 128-bit tweak, 10 steps
 - Pholkos-512-512: 512-bit block, 512-bit key, 128-bit tweak, 10 steps
@@ -304,6 +320,7 @@ For single-block operations, convenience functions are available: `Pholkos256Enc
 Large-block cipher family using Generalized Even-Mansour construction.
 
 Vistrutah-256 (32-byte blocks):
+
 ```go
 plaintext := make([]byte, 32)
 ciphertext := make([]byte, 32)
@@ -314,6 +331,7 @@ aes.Vistrutah256Decrypt(ciphertext, plaintext, key, aes.Vistrutah256RoundsLong)
 ```
 
 Vistrutah-512 (64-byte blocks):
+
 ```go
 plaintext := make([]byte, 64)
 ciphertext := make([]byte, 64)
@@ -323,6 +341,7 @@ aes.Vistrutah512Encrypt(plaintext, ciphertext, key, aes.Vistrutah512RoundsLong51
 ```
 
 Round options:
+
 | Variant                     | Short | Long |
 | --------------------------- | ----- | ---- |
 | Vistrutah-256               | 10    | 14   |
@@ -338,6 +357,7 @@ Reference: ePrint 2024/1534
 Lightweight authenticated encryption (AEAD) using two AES-128 keys. Located in `examples/cymric/`.
 
 Two variants:
+
 - Cymric1: |msg| + |nonce| <= 16, |nonce| + |ad| <= 15
 - Cymric2: |msg| <= 16, |nonce| + |ad| <= 15
 
@@ -481,7 +501,7 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 
 | Construction  | Key Functions                                                               |
 | ------------- | --------------------------------------------------------------------------- |
-| Areion        | `Areion256`, `Areion512`, `InvAreion256`, `InvAreion512`                    |
+| Areion        | `Areion256.Permute/InversePermute`, `Areion512.Permute/InversePermute`, `Areion256DM`, `Areion512DM` |
 | AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                                |
 | Haraka        | `Haraka256`, `Haraka512`, `Haraka256ToBlock`, `Haraka512ToBlock`            |
 | KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                           |

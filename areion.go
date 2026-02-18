@@ -231,3 +231,34 @@ func areion512InversePermuteSoftware(state *Areion512) {
 		areion512InvRound(x0, x1, x2, x3, &areionRoundConstants[8-i])
 	}
 }
+
+// Areion256DM computes the Areion256-DM short fixed-input hash of a 32-byte input.
+// It applies the Davies-Meyer construction: h = P(m) XOR m, returning the full
+// 32-byte result as the digest.
+func Areion256DM(input *[32]byte) [32]byte {
+	var state Areion256
+	copy(state[:], input[:])
+	state.Permute()
+	for i := range state {
+		state[i] ^= input[i]
+	}
+	return [32]byte(state)
+}
+
+// Areion512DM computes the Areion512-DM short fixed-input hash of a 64-byte input.
+// It applies the Davies-Meyer construction: h = P(m) XOR m, then extracts 32 bytes
+// from specific positions in the state as the digest.
+func Areion512DM(input *[64]byte) [32]byte {
+	var state Areion512
+	copy(state[:], input[:])
+	state.Permute()
+	for i := range state {
+		state[i] ^= input[i]
+	}
+	var out [32]byte
+	copy(out[0:8], state[8:16])
+	copy(out[8:16], state[24:32])
+	copy(out[16:24], state[32:40])
+	copy(out[24:32], state[48:56])
+	return out
+}

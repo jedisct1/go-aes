@@ -207,7 +207,74 @@ func TestAreion512InverseHardwareSoftwareMatch(t *testing.T) {
 	}
 }
 
+// Areion256-DM tests (test vectors from reference C implementation)
+func TestAreion256DM(t *testing.T) {
+	// Test vector 1: all zeros
+	var input [32]byte
+	out := Areion256DM(&input)
+	expected, _ := hex.DecodeString("2812a72465b26e9fca7583f6e4123aa1490e35e7d5203e4ba2e927b0482f4db8")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Areion256DM(zeros) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Test vector 2: sequential bytes 0..31
+	for i := range input {
+		input[i] = byte(i)
+	}
+	out = Areion256DM(&input)
+	expected, _ = hex.DecodeString("68855d102ae167676ece08d24eaebcccb366e44807ae13d0d506a88795b2bf9a")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Areion256DM(sequential) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+}
+
+func TestAreion512DM(t *testing.T) {
+	// Test vector 1: all zeros
+	var input [64]byte
+	out := Areion512DM(&input)
+	expected, _ := hex.DecodeString("59367122cb3c96a93fe6dc85779102e7e3f5501016ceed1dad168794bd96cff3")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Areion512DM(zeros) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Test vector 2: sequential bytes 0..63
+	for i := range input {
+		input[i] = byte(i)
+	}
+	out = Areion512DM(&input)
+	expected, _ = hex.DecodeString("0fd4a3209d9892f05fbd2556b690b9bbc08e9ffbc2c773e5d451888ade4c23f1")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Areion512DM(sequential) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+}
+
 // Benchmarks
+func BenchmarkAreion256DM(b *testing.B) {
+	var input [32]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	b.SetBytes(32)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Areion256DM(&input)
+	}
+}
+
+func BenchmarkAreion512DM(b *testing.B) {
+	var input [64]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Areion512DM(&input)
+	}
+}
+
 func BenchmarkAreion256Permute(b *testing.B) {
 	var state Areion256
 	for i := range state {
