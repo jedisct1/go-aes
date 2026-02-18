@@ -306,7 +306,8 @@ func AreionSoEM256(key *[64]byte, input *[32]byte) [32]byte {
 		state1[i] = input[i] ^ key[i]
 		state2[i] = input[i] ^ key[32+i] ^ areionSoEM256DomainSep[i]
 	}
-	areion256Permute2(&state1, &state2)
+	state1.Permute()
+	state2.Permute()
 	for i := range state1 {
 		state1[i] ^= state2[i]
 	}
@@ -324,7 +325,8 @@ func AreionSoEM512(key *[128]byte, input *[64]byte) [64]byte {
 		state1[i] = input[i] ^ key[i]
 		state2[i] = input[i] ^ key[64+i] ^ areionSoEM512DomainSep[i]
 	}
-	areion512Permute2(&state1, &state2)
+	state1.Permute()
+	state2.Permute()
 	for i := range state1 {
 		state1[i] ^= state2[i]
 	}
