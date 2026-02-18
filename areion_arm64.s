@@ -452,3 +452,199 @@ TEXT areion512_inv_round<>(SB),NOSPLIT,$0
 	VEOR V3.B16, V5.B16, V3.B16
 
 	RET
+
+// Interleaved Areion256 permutation of two independent states
+// func areion256Permute2Asm(state1, state2 *Areion256)
+//
+// Processes two Areion256 permutations simultaneously, interleaving AES
+// instructions to exploit instruction-level parallelism on ARM cores with
+// multiple AES pipelines (e.g., Apple Silicon can dual-issue AESE+AESMC).
+//
+// Instance A: V0 (x0), V1 (x1), V3 (temp)
+// Instance B: V4 (x0), V5 (x1), V6 (temp)
+// Shared: V15 (zero), V2 (rc_even), V7 (rc_odd)
+TEXT ·areion256Permute2Asm(SB),NOSPLIT,$0
+	MOVD state1+0(FP), R0
+	MOVD state2+8(FP), R1
+
+	// Load instance A
+	VLD1 (R0), [V0.B16]
+	ADD $16, R0, R6
+	VLD1 (R6), [V1.B16]
+
+	// Load instance B
+	VLD1 (R1), [V4.B16]
+	ADD $16, R1, R6
+	VLD1 (R6), [V5.B16]
+
+	MOVD $·areionRoundConstants(SB), R2
+	VEOR V15.B16, V15.B16, V15.B16
+
+	MOVD $0, R3  // pair counter (0..4), each pair = even+odd round
+
+areion256_x2_loop:
+	// Load round constants for even and odd rounds
+	LSL $5, R3, R4
+	ADD R2, R4, R5
+	VLD1 (R5), [V2.B16]     // rc_even = rc[pair*2]
+	ADD $16, R5, R5
+	VLD1 (R5), [V7.B16]     // rc_odd = rc[pair*2+1]
+
+	// === Even round: temp=x0; RoundNoKey(temp); temp^=rc; RoundNoKey(temp); temp^=x1; FinalRoundNoKey(x0); x1=temp ===
+	VMOV V0.B16, V3.B16
+	VMOV V4.B16, V6.B16
+	AESE V15.B16, V3.B16
+	AESE V15.B16, V6.B16
+	AESMC V3.B16, V3.B16
+	AESMC V6.B16, V6.B16
+	VEOR V3.B16, V2.B16, V3.B16
+	VEOR V6.B16, V2.B16, V6.B16
+	AESE V15.B16, V3.B16
+	AESE V15.B16, V6.B16
+	AESMC V3.B16, V3.B16
+	AESMC V6.B16, V6.B16
+	VEOR V3.B16, V1.B16, V3.B16
+	VEOR V6.B16, V5.B16, V6.B16
+	AESE V15.B16, V0.B16
+	AESE V15.B16, V4.B16
+	VMOV V3.B16, V1.B16
+	VMOV V6.B16, V5.B16
+
+	// === Odd round: temp=x1; RoundNoKey(temp); temp^=rc; RoundNoKey(temp); temp^=x0; FinalRoundNoKey(x1); x0=temp ===
+	VMOV V1.B16, V3.B16
+	VMOV V5.B16, V6.B16
+	AESE V15.B16, V3.B16
+	AESE V15.B16, V6.B16
+	AESMC V3.B16, V3.B16
+	AESMC V6.B16, V6.B16
+	VEOR V3.B16, V7.B16, V3.B16
+	VEOR V6.B16, V7.B16, V6.B16
+	AESE V15.B16, V3.B16
+	AESE V15.B16, V6.B16
+	AESMC V3.B16, V3.B16
+	AESMC V6.B16, V6.B16
+	VEOR V3.B16, V0.B16, V3.B16
+	VEOR V6.B16, V4.B16, V6.B16
+	AESE V15.B16, V1.B16
+	AESE V15.B16, V5.B16
+	VMOV V3.B16, V0.B16
+	VMOV V6.B16, V4.B16
+
+	ADD $1, R3, R3
+	CMP $5, R3
+	BLT areion256_x2_loop
+
+	// Store instance A
+	MOVD state1+0(FP), R0
+	VST1 [V0.B16], (R0)
+	ADD $16, R0, R6
+	VST1 [V1.B16], (R6)
+
+	// Store instance B
+	MOVD state2+8(FP), R1
+	VST1 [V4.B16], (R1)
+	ADD $16, R1, R6
+	VST1 [V5.B16], (R6)
+	RET
+
+// Interleaved Areion512 permutation of two independent states
+// func areion512Permute2Asm(state1, state2 *Areion512)
+//
+// Instance A: V0 (a), V1 (b), V2 (c), V3 (d)
+// Instance B: V16 (a), V17 (b), V18 (c), V19 (d)
+// Shared: V15 (zero), V4 (rc), V5/V20 (temps), V14 (rotation temp)
+TEXT ·areion512Permute2Asm(SB),NOSPLIT,$0
+	MOVD state1+0(FP), R0
+	MOVD state2+8(FP), R1
+
+	// Load instance A
+	VLD1.P 16(R0), [V0.B16]
+	VLD1.P 16(R0), [V1.B16]
+	VLD1.P 16(R0), [V2.B16]
+	VLD1 (R0), [V3.B16]
+
+	// Load instance B
+	VLD1.P 16(R1), [V16.B16]
+	VLD1.P 16(R1), [V17.B16]
+	VLD1.P 16(R1), [V18.B16]
+	VLD1 (R1), [V19.B16]
+
+	MOVD $·areionRoundConstants(SB), R2
+	VEOR V15.B16, V15.B16, V15.B16
+
+	MOVD $0, R3  // round counter (0..14)
+
+areion512_x2_loop:
+	// Load round constant
+	LSL $4, R3, R4
+	ADD R2, R4, R5
+	VLD1 (R5), [V4.B16]
+
+	// Interleaved round: temp=a; RoundNoKey(temp); b^=temp
+	VMOV V0.B16, V5.B16
+	VMOV V16.B16, V20.B16
+	AESE V15.B16, V5.B16
+	AESE V15.B16, V20.B16
+	AESMC V5.B16, V5.B16
+	AESMC V20.B16, V20.B16
+	VEOR V1.B16, V5.B16, V1.B16
+	VEOR V17.B16, V20.B16, V17.B16
+
+	// temp=c; RoundNoKey(temp); d^=temp
+	VMOV V2.B16, V5.B16
+	VMOV V18.B16, V20.B16
+	AESE V15.B16, V5.B16
+	AESE V15.B16, V20.B16
+	AESMC V5.B16, V5.B16
+	AESMC V20.B16, V20.B16
+	VEOR V3.B16, V5.B16, V3.B16
+	VEOR V19.B16, V20.B16, V19.B16
+
+	// FinalRoundNoKey(a)
+	AESE V15.B16, V0.B16
+	AESE V15.B16, V16.B16
+
+	// FinalRoundNoKey(c); c^=rc; RoundNoKey(c)
+	AESE V15.B16, V2.B16
+	AESE V15.B16, V18.B16
+	VEOR V2.B16, V4.B16, V2.B16
+	VEOR V18.B16, V4.B16, V18.B16
+	AESE V15.B16, V2.B16
+	AESE V15.B16, V18.B16
+	AESMC V2.B16, V2.B16
+	AESMC V18.B16, V18.B16
+
+	// Rotate A: (a,b,c,d) -> (b,c,d,a)
+	VMOV V0.B16, V14.B16
+	VMOV V1.B16, V0.B16
+	VMOV V2.B16, V1.B16
+	VMOV V3.B16, V2.B16
+	VMOV V14.B16, V3.B16
+
+	// Rotate B: (a,b,c,d) -> (b,c,d,a)
+	VMOV V16.B16, V14.B16
+	VMOV V17.B16, V16.B16
+	VMOV V18.B16, V17.B16
+	VMOV V19.B16, V18.B16
+	VMOV V14.B16, V19.B16
+
+	ADD $1, R3, R3
+	CMP $15, R3
+	BLT areion512_x2_loop
+
+	// After 15 left-rotations: V0=x3, V1=x0, V2=x1, V3=x2
+	// Store instance A
+	MOVD state1+0(FP), R0
+	VST1.P [V0.B16], 16(R0)
+	VST1.P [V1.B16], 16(R0)
+	VST1.P [V2.B16], 16(R0)
+	VST1 [V3.B16], (R0)
+
+	// After 15 left-rotations: V16=x3, V17=x0, V18=x1, V19=x2
+	// Store instance B
+	MOVD state2+8(FP), R1
+	VST1.P [V16.B16], 16(R1)
+	VST1.P [V17.B16], 16(R1)
+	VST1.P [V18.B16], 16(R1)
+	VST1 [V19.B16], (R1)
+	RET
