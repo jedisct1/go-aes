@@ -453,52 +453,6 @@ func TestAreionSoEM256DifferentInputs(t *testing.T) {
 	}
 }
 
-func TestAreion256Parallel(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		var s1, s2, s1ref, s2ref Areion256
-		for j := range s1 {
-			s1[j] = byte(i*3 + j)
-			s2[j] = byte(i*5 + j + 128)
-		}
-		copy(s1ref[:], s1[:])
-		copy(s2ref[:], s2[:])
-
-		s1ref.Permute()
-		s2ref.Permute()
-		areion256Permute2(&s1, &s2)
-
-		if !bytes.Equal(s1[:], s1ref[:]) {
-			t.Fatalf("Areion256 parallel state1 mismatch at i=%d\nParallel:   %x\nSequential: %x", i, s1[:], s1ref[:])
-		}
-		if !bytes.Equal(s2[:], s2ref[:]) {
-			t.Fatalf("Areion256 parallel state2 mismatch at i=%d\nParallel:   %x\nSequential: %x", i, s2[:], s2ref[:])
-		}
-	}
-}
-
-func TestAreion512Parallel(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		var s1, s2, s1ref, s2ref Areion512
-		for j := range s1 {
-			s1[j] = byte(i*7 + j)
-			s2[j] = byte(i*11 + j + 64)
-		}
-		copy(s1ref[:], s1[:])
-		copy(s2ref[:], s2[:])
-
-		s1ref.Permute()
-		s2ref.Permute()
-		areion512Permute2(&s1, &s2)
-
-		if !bytes.Equal(s1[:], s1ref[:]) {
-			t.Fatalf("Areion512 parallel state1 mismatch at i=%d\nParallel:   %x\nSequential: %x", i, s1[:], s1ref[:])
-		}
-		if !bytes.Equal(s2[:], s2ref[:]) {
-			t.Fatalf("Areion512 parallel state2 mismatch at i=%d\nParallel:   %x\nSequential: %x", i, s2[:], s2ref[:])
-		}
-	}
-}
-
 // Benchmarks
 
 func BenchmarkAreionSoEM256(b *testing.B) {
@@ -592,34 +546,6 @@ func BenchmarkAreion512DM(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Areion512DM(&input)
-	}
-}
-
-func BenchmarkAreion256Permute2(b *testing.B) {
-	var s1, s2 Areion256
-	for i := range s1 {
-		s1[i] = byte(i)
-		s2[i] = byte(i + 32)
-	}
-
-	b.SetBytes(64)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		areion256Permute2(&s1, &s2)
-	}
-}
-
-func BenchmarkAreion512Permute2(b *testing.B) {
-	var s1, s2 Areion512
-	for i := range s1 {
-		s1[i] = byte(i)
-		s2[i] = byte(i + 64)
-	}
-
-	b.SetBytes(128)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		areion512Permute2(&s1, &s2)
 	}
 }
 
