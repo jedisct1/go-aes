@@ -31,6 +31,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [LeMac](#lemac)
     - [Skye KDF](#skye-kdf)
     - [MacaKey](#macakey)
+    - [Sponge-F](#sponge-f)
   - [Performance](#performance)
   - [API Reference](#api-reference)
     - [Round Functions](#round-functions)
@@ -499,6 +500,35 @@ mac, _ := macakey.MacakeyWithIV(key[:], iv, message, 32)
 ```
 
 Based on MacaKey V2 with NCP-based domain separation. Provides 128-bit security.
+
+### Sponge-F
+
+Sponge construction with feed-forward using Areion512 as the underlying permutation. Located in `examples/spongef/`.
+
+Unlike a standard sponge, Sponge-F XORs the pre-permutation capacity back into the post-permutation state during both absorption and squeezing. This feed-forward makes the construction secure even when the permutation is not ideal, requiring only unpredictability rather than indifferentiability from a random permutation.
+
+```go
+import "github.com/jedisct1/go-aes/examples/spongef"
+
+// One-shot hash (256-bit output)
+hash := spongef.Hash(message)
+
+// Variable-length output (XOF-style)
+out, _ := spongef.SpongeF(message, 64)  // 64 bytes
+
+// With custom IV
+out, _ := spongef.SpongeFWithIV(iv, message, 64)
+
+// Streaming
+ctx := spongef.NewSpongeFContext()
+ctx.Write(chunk1)
+ctx.Write(chunk2)
+hash := ctx.Sum(32)
+```
+
+Parameters: rate r = 256 bits, capacity c = 256 bits, Areion512 permutation (b = 512 bits). Minimum output size is 32 bytes.
+
+Reference: ePrint 2025/1006
 
 ## Performance
 
