@@ -352,7 +352,142 @@ func TestAreion512EMKnownAnswer(t *testing.T) {
 	}
 }
 
+// Sum of Even-Mansour tests
+
+func TestAreionSoEM256(t *testing.T) {
+	// All-zeros key and input
+	var key [64]byte
+	var input [32]byte
+	out := AreionSoEM256(&key, &input)
+	expected, _ := hex.DecodeString("d2754ec03e7025e852ab85dc0b38dae087add5a6522261dfc7b424c96cbed761")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("AreionSoEM256(zeros) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Sequential key and input
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range input {
+		input[i] = byte(i + 64)
+	}
+	out = AreionSoEM256(&key, &input)
+	expected, _ = hex.DecodeString("8cf756fef9750beb329f700a83e50493cec0615d698a7af94ab1654225d9320f")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("AreionSoEM256(seq) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+}
+
+func TestAreionSoEM512(t *testing.T) {
+	// All-zeros key and input
+	var key [128]byte
+	var input [64]byte
+	out := AreionSoEM512(&key, &input)
+	expected, _ := hex.DecodeString("53f751fa1dc08e0fd2bc595d06ebd77244aa9c66cd2a0c1823e27b31d114840622022da12be0ece250735ce6d170d77aa57d69191f1d01f3db3e3886b23e1918")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("AreionSoEM512(zeros) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Sequential key and input
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range input {
+		input[i] = byte(i + 128)
+	}
+	out = AreionSoEM512(&key, &input)
+	expected, _ = hex.DecodeString("3cb3f1cc85dede951a4f8f7f3ad229457ed67c61cdf31ec7ad9e4e0aaa9a917897d2a5b2d561da88e503d701fdf15dbfdc1a69f39bd316785f10bb893ce17d32")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("AreionSoEM512(seq) failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+}
+
+func TestAreionSoEM256DifferentKeys(t *testing.T) {
+	var key1, key2 [64]byte
+	var input [32]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+	for i := range key1 {
+		key1[i] = byte(i)
+		key2[i] = byte(i + 1)
+	}
+	out1 := AreionSoEM256(&key1, &input)
+	out2 := AreionSoEM256(&key2, &input)
+	if bytes.Equal(out1[:], out2[:]) {
+		t.Error("AreionSoEM256: different keys should produce different outputs")
+	}
+}
+
+func TestAreionSoEM512DifferentKeys(t *testing.T) {
+	var key1, key2 [128]byte
+	var input [64]byte
+	for i := range input {
+		input[i] = byte(i)
+	}
+	for i := range key1 {
+		key1[i] = byte(i)
+		key2[i] = byte(i + 1)
+	}
+	out1 := AreionSoEM512(&key1, &input)
+	out2 := AreionSoEM512(&key2, &input)
+	if bytes.Equal(out1[:], out2[:]) {
+		t.Error("AreionSoEM512: different keys should produce different outputs")
+	}
+}
+
+func TestAreionSoEM256DifferentInputs(t *testing.T) {
+	var key [64]byte
+	var input1, input2 [32]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range input1 {
+		input1[i] = byte(i)
+		input2[i] = byte(i + 1)
+	}
+	out1 := AreionSoEM256(&key, &input1)
+	out2 := AreionSoEM256(&key, &input2)
+	if bytes.Equal(out1[:], out2[:]) {
+		t.Error("AreionSoEM256: different inputs should produce different outputs")
+	}
+}
+
 // Benchmarks
+
+func BenchmarkAreionSoEM256(b *testing.B) {
+	var key [64]byte
+	var input [32]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range input {
+		input[i] = byte(i + 64)
+	}
+
+	b.SetBytes(32)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		AreionSoEM256(&key, &input)
+	}
+}
+
+func BenchmarkAreionSoEM512(b *testing.B) {
+	var key [128]byte
+	var input [64]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	for i := range input {
+		input[i] = byte(i + 128)
+	}
+
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		AreionSoEM512(&key, &input)
+	}
+}
 
 func BenchmarkAreion256EM(b *testing.B) {
 	var key [32]byte

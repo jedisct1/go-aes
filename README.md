@@ -18,6 +18,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
   - [Cryptographic Constructions](#cryptographic-constructions)
     - [Areion Permutations](#areion-permutations)
     - [Areion-EM Block Cipher](#areion-em-block-cipher)
+    - [Areion-SoEM PRF](#areion-soem-prf)
     - [AES-PRF](#aes-prf)
     - [Haraka v2](#haraka-v2)
     - [KIASU-BC Tweakable Block Cipher](#kiasu-bc-tweakable-block-cipher)
@@ -50,6 +51,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
 - Multi-round functions: Optimized 4/6/7/10/12/14 round operations
 - Wide-block permutations: Areion256 (32-byte) and Areion512 (64-byte)
 - Keyed block ciphers from permutations: Areion256-EM and Areion512-EM (Even-Mansour construction)
+- Beyond-birthday-bound PRF: Areion-SoEM-256 and Areion-SoEM-512 (Sum of Even-Mansour)
 - Short fixed-input hashing: Areion256-DM and Areion512-DM (Davies-Meyer construction)
 - Keyed short-input hashing: Vistrutah256-MP and Vistrutah512-MP (Miyaguchi-Preneel construction)
 - AES-based hashing: Haraka v2 (256-bit and 512-bit input variants)
@@ -216,6 +218,23 @@ var key64 [64]byte
 var block64 [64]byte
 ct512 := aes.Areion512EM(&key64, &block64)
 pt512 := aes.Areion512EMDecrypt(&key64, &ct512)
+```
+
+### Areion-SoEM PRF
+
+Beyond-birthday-bound PRF using Sum of Even-Mansour with Areion permutations: `F(k1, k2, m) = P(m XOR k1) XOR P(m XOR k2 XOR d)`, where `d` is a domain separation constant. Two independent subkeys push PRF security to ~2n/3 bits, well beyond the n/2-bit birthday bound of single-call constructions.
+
+- Areion-SoEM-256: 64-byte key (2x32), 32-byte input/output, ~170-bit PRF security
+- Areion-SoEM-512: 128-byte key (2x64), 64-byte input/output, ~341-bit PRF security
+
+```go
+var key256 [64]byte   // two independent 32-byte subkeys
+var input256 [32]byte
+output256 := aes.AreionSoEM256(&key256, &input256)
+
+var key512 [128]byte  // two independent 64-byte subkeys
+var input512 [64]byte
+output512 := aes.AreionSoEM512(&key512, &input512)
 ```
 
 ### AES-PRF
@@ -536,7 +555,7 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 
 | Construction  | Key Functions                                                               |
 | ------------- | --------------------------------------------------------------------------- |
-| Areion        | `Areion256.Permute/InversePermute`, `Areion512.Permute/InversePermute`, `Areion256DM`, `Areion512DM`, `Areion256EM/EMDecrypt`, `Areion512EM/EMDecrypt` |
+| Areion        | `Areion256.Permute/InversePermute`, `Areion512.Permute/InversePermute`, `Areion256DM`, `Areion512DM`, `Areion256EM/EMDecrypt`, `Areion512EM/EMDecrypt`, `AreionSoEM256`, `AreionSoEM512` |
 | AES-PRF       | `NewAESPRF`, `(*AESPRF).PRF`                                                |
 | Haraka        | `Haraka256`, `Haraka512`, `Haraka256ToBlock`, `Haraka512ToBlock`            |
 | KIASU-BC      | `NewKiasuContext`, `KiasuEncrypt`, `KiasuDecrypt`                           |

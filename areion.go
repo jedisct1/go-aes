@@ -288,6 +288,51 @@ func Areion512EMDecrypt(key *[64]byte, block *[64]byte) [64]byte {
 	return [64]byte(state)
 }
 
+// Domain separation constants for Sum of Even-Mansour.
+// Non-zero in the first byte to ensure the two branches never evaluate P at the same point.
+var (
+	areionSoEM256DomainSep [32]byte = [32]byte{0x01}
+	areionSoEM512DomainSep [64]byte = [64]byte{0x01}
+)
+
+// AreionSoEM256 computes a PRF using Sum of Even-Mansour with Areion256.
+// F(k1, k2, m) = P(m XOR k1) XOR P(m XOR k2 XOR d), where d is a domain
+// separation constant and P is the Areion256 permutation. With two independent
+// 32-byte subkeys, this achieves ~170-bit PRF security (beyond birthday bound).
+// Key is 64 bytes (two independent 32-byte subkeys). Input and output are 32 bytes.
+func AreionSoEM256(key *[64]byte, input *[32]byte) [32]byte {
+	var state1, state2 Areion256
+	for i := range state1 {
+		state1[i] = input[i] ^ key[i]
+		state2[i] = input[i] ^ key[32+i] ^ areionSoEM256DomainSep[i]
+	}
+	state1.Permute()
+	state2.Permute()
+	for i := range state1 {
+		state1[i] ^= state2[i]
+	}
+	return [32]byte(state1)
+}
+
+// AreionSoEM512 computes a PRF using Sum of Even-Mansour with Areion512.
+// F(k1, k2, m) = P(m XOR k1) XOR P(m XOR k2 XOR d), where d is a domain
+// separation constant and P is the Areion512 permutation. With two independent
+// 64-byte subkeys, this achieves ~341-bit PRF security (beyond birthday bound).
+// Key is 128 bytes (two independent 64-byte subkeys). Input and output are 64 bytes.
+func AreionSoEM512(key *[128]byte, input *[64]byte) [64]byte {
+	var state1, state2 Areion512
+	for i := range state1 {
+		state1[i] = input[i] ^ key[i]
+		state2[i] = input[i] ^ key[64+i] ^ areionSoEM512DomainSep[i]
+	}
+	state1.Permute()
+	state2.Permute()
+	for i := range state1 {
+		state1[i] ^= state2[i]
+	}
+	return [64]byte(state1)
+}
+
 // Areion256DM computes the Areion256-DM short fixed-input hash of a 32-byte input.
 // It applies the Davies-Meyer construction: h = P(m) XOR m, returning the full
 // 32-byte result as the digest.
