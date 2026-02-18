@@ -775,3 +775,39 @@ func Vistrutah512Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 	copy(plaintext[32:48], s2[:])
 	copy(plaintext[48:64], s3[:])
 }
+
+// Vistrutah256MP computes a keyed hash using the Miyaguchi-Preneel construction:
+// h = E(k, X) XOR k XOR X. This is one of the 12 provably secure PGV compression
+// functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+// Input is a fixed 32-byte block, key must be 16 or 32 bytes.
+// Returns a 32-byte digest.
+func Vistrutah256MP(input *[32]byte, key []byte, rounds int) [32]byte {
+	var ct [32]byte
+	Vistrutah256Encrypt(input[:], ct[:], key, rounds)
+	for i := range ct {
+		ct[i] ^= input[i]
+	}
+	// XOR expanded key (16-byte keys are doubled to 32 by Vistrutah256Encrypt)
+	for i := range ct {
+		ct[i] ^= key[i%len(key)]
+	}
+	return ct
+}
+
+// Vistrutah512MP computes a keyed hash using the Miyaguchi-Preneel construction:
+// h = E(k, X) XOR k XOR X. This is one of the 12 provably secure PGV compression
+// functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+// Input is a fixed 64-byte block, key must be 32 or 64 bytes.
+// Returns a 64-byte digest.
+func Vistrutah512MP(input *[64]byte, key []byte, rounds int) [64]byte {
+	var ct [64]byte
+	Vistrutah512Encrypt(input[:], ct[:], key, rounds)
+	for i := range ct {
+		ct[i] ^= input[i]
+	}
+	// XOR expanded key (32-byte keys are doubled to 64 by Vistrutah512Encrypt)
+	for i := range ct {
+		ct[i] ^= key[i%len(key)]
+	}
+	return ct
+}

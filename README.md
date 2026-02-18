@@ -350,6 +350,18 @@ Round options:
 
 Reference: ePrint 2024/1534
 
+**Vistrutah-MP**: Keyed fixed-input hash functions using the Miyaguchi-Preneel construction (`h = E(k, X) XOR k XOR X`), one of the 12 provably secure PGV compression functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+
+```go
+var input [32]byte
+var key [32]byte
+hash256 := aes.Vistrutah256MP(&input, key[:], aes.Vistrutah256RoundsLong)  // [32]byte
+
+var input64 [64]byte
+var key64 [64]byte
+hash512 := aes.Vistrutah512MP(&input64, key64[:], aes.Vistrutah512RoundsLong512Key)  // [64]byte
+```
+
 ## Examples
 
 ### Cymric
@@ -508,7 +520,7 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 | Deoxys-BC-256 | `NewDeoxysBC256`, `DeoxysBC256Encrypt`, `DeoxysBC256Decrypt`                |
 | ButterKnife   | `ButterKnife`, `NewButterKnifeContext`, `(*ButterKnifeContext).Eval`        |
 | Pholkos       | `NewPholkos256Context`, `NewPholkos512Context`, `Pholkos256Encrypt/Decrypt` |
-| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`                |
+| Vistrutah     | `Vistrutah256Encrypt/Decrypt`, `Vistrutah512Encrypt/Decrypt`, `Vistrutah256MP`, `Vistrutah512MP` |
 
 ### Skye KDF (examples/skye)
 

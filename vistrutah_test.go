@@ -2,6 +2,7 @@ package aes
 
 import (
 	"bytes"
+	"encoding/hex"
 	"testing"
 )
 
@@ -306,6 +307,116 @@ func TestMixingLayer512(t *testing.T) {
 
 	if s0 != original0 || s1 != original1 || s2 != original2 || s3 != original3 {
 		t.Errorf("mixing layer 512 inverse failed")
+	}
+}
+
+func TestVistrutah256MP(t *testing.T) {
+	var input [32]byte
+	var key [32]byte
+	for i := range input {
+		input[i] = byte(i)
+		key[i] = byte(i + 0x80)
+	}
+
+	// 32-byte key, long rounds
+	out := Vistrutah256MP(&input, key[:], Vistrutah256RoundsLong)
+	expected, _ := hex.DecodeString("a5e86ab31411583b11012964a66f047d4cb1da6bd6ec54414154100f9db38c86")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Vistrutah256MP long 32key failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// 32-byte key, short rounds
+	out = Vistrutah256MP(&input, key[:], Vistrutah256RoundsShort)
+	expected, _ = hex.DecodeString("f7a527067dc5697b7157104d4b6853a364b14c58c5df808d16718ed99ff1d4a2")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Vistrutah256MP short 32key failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// 16-byte key, long rounds
+	out = Vistrutah256MP(&input, key[:16], Vistrutah256RoundsLong)
+	expected, _ = hex.DecodeString("795ac835e0df26f03ff584f7729a5493b81dbaed454a7c572fe07e4d595c96b5")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Vistrutah256MP long 16key failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Different inputs produce different outputs
+	var input2 [32]byte
+	input2[0] = 1
+	out1 := Vistrutah256MP(&input, key[:], Vistrutah256RoundsLong)
+	out2 := Vistrutah256MP(&input2, key[:], Vistrutah256RoundsLong)
+	if out1 == out2 {
+		t.Error("Vistrutah256MP: different inputs produced same output")
+	}
+
+	// Different keys produce different outputs
+	var key2 [32]byte
+	key2[0] = 1
+	out1 = Vistrutah256MP(&input, key[:], Vistrutah256RoundsLong)
+	out2 = Vistrutah256MP(&input, key2[:], Vistrutah256RoundsLong)
+	if out1 == out2 {
+		t.Error("Vistrutah256MP: different keys produced same output")
+	}
+}
+
+func TestVistrutah512MP(t *testing.T) {
+	var input [64]byte
+	var key [64]byte
+	for i := range input {
+		input[i] = byte(i)
+		key[i] = byte(i + 0x80)
+	}
+
+	// 64-byte key, long rounds
+	out := Vistrutah512MP(&input, key[:], Vistrutah512RoundsLong512Key)
+	expected, _ := hex.DecodeString("deb7b6d3560e9e948043ab5abfc450986a7b7b5358b1b269e64c1ad70c84212745b8b16dbb1487710b9c0873b4ff3331e7302a8e2e650836312cb763f2136253")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Vistrutah512MP long 64key failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// 32-byte key, long rounds
+	out = Vistrutah512MP(&input, key[:32], Vistrutah512RoundsLong256Key)
+	expected, _ = hex.DecodeString("b12f6b49c4690a59c09898d8484a106a46d930313ac0781bfe1c1c8970d7280b5fc5f9012bfc9589b948ad1411c0fdfbb46d6a51bdc9b1f4474ff43af85d794b")
+	if !bytes.Equal(out[:], expected) {
+		t.Errorf("Vistrutah512MP long 32key failed\nGot:      %x\nExpected: %x", out[:], expected)
+	}
+
+	// Different inputs produce different outputs
+	var input2 [64]byte
+	input2[0] = 1
+	out1 := Vistrutah512MP(&input, key[:], Vistrutah512RoundsLong512Key)
+	out2 := Vistrutah512MP(&input2, key[:], Vistrutah512RoundsLong512Key)
+	if out1 == out2 {
+		t.Error("Vistrutah512MP: different inputs produced same output")
+	}
+}
+
+func BenchmarkVistrutah256MP(b *testing.B) {
+	var input [32]byte
+	var key [32]byte
+	for i := range input {
+		input[i] = byte(i)
+		key[i] = byte(i)
+	}
+
+	b.ResetTimer()
+	b.SetBytes(32)
+	for range b.N {
+		Vistrutah256MP(&input, key[:], Vistrutah256RoundsLong)
+	}
+}
+
+func BenchmarkVistrutah512MP(b *testing.B) {
+	var input [64]byte
+	var key [64]byte
+	for i := range input {
+		input[i] = byte(i)
+		key[i] = byte(i)
+	}
+
+	b.ResetTimer()
+	b.SetBytes(64)
+	for range b.N {
+		Vistrutah512MP(&input, key[:], Vistrutah512RoundsLong512Key)
 	}
 }
 
