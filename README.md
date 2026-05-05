@@ -561,7 +561,7 @@ pt, err = uedt.DecryptMX(&MK, nonce, ad, ct, tag)
 
 `DecryptDM` / `DecryptMX` return `uedt.ErrAuthFailure` on tag mismatch, with a constant-time tag comparison.
 
-Reference: Guo, Khairallah, Minematsu — *Better Usability: Leakage-Resistant AEADs from Single-length key Blockciphers*
+Reference: ePrint 2026/824 — Guo, Khairallah, Minematsu, *Better Usability: Leakage-Resistant AEADs from Single-length key Blockciphers*
 
 ## Performance
 
