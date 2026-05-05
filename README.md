@@ -32,6 +32,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [Skye KDF](#skye-kdf)
     - [MacaKey](#macakey)
     - [Sponge-F](#sponge-f)
+    - [UEDT (UEDTDM, UEDTMX)](#uedt-uedtdm-uedtmx)
   - [Performance](#performance)
   - [API Reference](#api-reference)
     - [Round Functions](#round-functions)
@@ -59,6 +60,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
 - Tweakable block ciphers: KIASU-BC, Deoxys-BC-256, Pholkos (256-bit and 512-bit)
 - Large-block ciphers: Vistrutah-256 and Vistrutah-512
 - Expanding PRF: ButterKnife (128-bit to 1024-bit expansion)
+- Leakage-resistant AEAD: UEDTDM and UEDTMX, single-length-key BC modes with rate 1/4 and Grade-3 leakage resistance
 - Cross-platform: Identical results on Intel and ARM with automatic fallback to pure Go
 
 ## Installation
@@ -529,6 +531,37 @@ hash := ctx.Sum(32)
 Parameters: rate r = 256 bits, capacity c = 256 bits, Areion512 permutation (b = 512 bits). Minimum output size is 32 bytes.
 
 Reference: ePrint 2025/1006
+
+### UEDT (UEDTDM, UEDTMX)
+
+Leakage-resistant AEAD modes built from a single-length-key block cipher (AES-128). Both modes follow the UEDT framework: a partially-fixed-key one-time encryption pass, an MJH double-block-length hash, and a Hirose-like finalization, combined Encrypt-then-MAC. Located in `examples/uedt/`.
+
+- UEDTDM uses the Davies-Meyer-based one-time encryption (PSVDM)
+- UEDTMX uses the mixing-layer-based one-time encryption (PSVMX, with `D = [[2, 1], [1, 1]]` over GF(2^128))
+
+Both are rate-1/4 with a 128-bit master key, 96-bit nonce, and 128-bit tag, achieving Grade-3 leakage resistance (CIML2 + CCAmL2) and birthday-bound CMT4 committing security under the assumed MJH collision bound.
+
+```go
+import "github.com/jedisct1/go-aes/examples/uedt"
+
+var MK aes.Block
+copy(MK[:], keyBytes)
+nonce := make([]byte, uedt.NonceSize)  // 12 bytes
+ad := []byte("metadata")
+msg := []byte("plaintext")
+
+// UEDTDM
+ct, tag, _ := uedt.EncryptDM(&MK, nonce, ad, msg)
+pt, err := uedt.DecryptDM(&MK, nonce, ad, ct, tag)
+
+// UEDTMX
+ct, tag, _ = uedt.EncryptMX(&MK, nonce, ad, msg)
+pt, err = uedt.DecryptMX(&MK, nonce, ad, ct, tag)
+```
+
+`DecryptDM` / `DecryptMX` return `uedt.ErrAuthFailure` on tag mismatch, with a constant-time tag comparison.
+
+Reference: Guo, Khairallah, Minematsu — *Better Usability: Leakage-Resistant AEADs from Single-length key Blockciphers*
 
 ## Performance
 
