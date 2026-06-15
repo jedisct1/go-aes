@@ -57,41 +57,13 @@ type ButterKnifeContextHW struct {
 	branchSTK [8][9]Block
 }
 
-// NewButterKnifeContextHW creates a context with pre-computed subtweakeys
-func NewButterKnifeContextHW(tweakey *Tweakey256) *ButterKnifeContextHW {
-	ctx := &ButterKnifeContextHW{}
-	rtk := DeoxysExpandTweakey256(tweakey)
-
-	// Pre-compute pre-fork subtweakeys (domain 0, rounds 0-6)
-	for i := 0; i < 7; i++ {
-		rconst := DeoxysRoundConstant(0, i)
-		for j := 0; j < 16; j++ {
-			ctx.preForkSTK[i][j] = rtk.TK1[i][j] ^ rtk.TK2[i][j] ^ rconst[j]
-		}
-	}
-
-	// Pre-compute branch subtweakeys (domains 1-8, rounds 7-15)
-	for branch := 0; branch < 8; branch++ {
-		domain := byte(branch + 1)
-		for r := 0; r < 9; r++ { // rounds 7-15 -> indices 0-8
-			roundNum := 7 + r
-			rconst := DeoxysRoundConstant(domain, roundNum)
-			for j := 0; j < 16; j++ {
-				ctx.branchSTK[branch][r][j] = rtk.TK1[roundNum][j] ^ rtk.TK2[roundNum][j] ^ rconst[j]
-			}
-		}
-	}
-
-	return ctx
-}
-
-// EvalHW evaluates ButterKnife with hardware acceleration
-func (ctx *ButterKnifeContextHW) EvalHW(input *Block) *ButterKnifeOutput {
+// EvalHWInto evaluates ButterKnife with hardware acceleration, writing the 8
+// output branches into out without allocating.
+func (ctx *ButterKnifeContextHW) EvalHWInto(input *Block, out *ButterKnifeOutput) {
 	if !CPU.HasARMCrypto {
-		return ctx.evalSoftware(input)
+		ctx.evalSoftwareInto(input, out)
+		return
 	}
-
-	var output ButterKnifeOutput
 
 	// Pre-fork: 7 rounds with domain 0
 	forkState := *input
@@ -116,10 +88,10 @@ func (ctx *ButterKnifeContextHW) EvalHW(input *Block) *ButterKnifeOutput {
 
 	butterKnife4BranchesASM(&branches03, &forkState, &stk03)
 
-	copy(output[0][:], branches03[0:16])
-	copy(output[1][:], branches03[16:32])
-	copy(output[2][:], branches03[32:48])
-	copy(output[3][:], branches03[48:64])
+	copy(out[0][:], branches03[0:16])
+	copy(out[1][:], branches03[16:32])
+	copy(out[2][:], branches03[32:48])
+	copy(out[3][:], branches03[48:64])
 
 	// Process branches 4-7 in parallel
 	var branches47 Block4
@@ -136,18 +108,14 @@ func (ctx *ButterKnifeContextHW) EvalHW(input *Block) *ButterKnifeOutput {
 
 	butterKnife4BranchesASM(&branches47, &forkState, &stk47)
 
-	copy(output[4][:], branches47[0:16])
-	copy(output[5][:], branches47[16:32])
-	copy(output[6][:], branches47[32:48])
-	copy(output[7][:], branches47[48:64])
-
-	return &output
+	copy(out[4][:], branches47[0:16])
+	copy(out[5][:], branches47[16:32])
+	copy(out[6][:], branches47[32:48])
+	copy(out[7][:], branches47[48:64])
 }
 
-// evalSoftware is a fallback that uses the precomputed keys with software rounds
-func (ctx *ButterKnifeContextHW) evalSoftware(input *Block) *ButterKnifeOutput {
-	var output ButterKnifeOutput
-
+// evalSoftwareInto is a fallback that uses the precomputed keys with software rounds
+func (ctx *ButterKnifeContextHW) evalSoftwareInto(input *Block, out *ButterKnifeOutput) {
 	// Pre-fork: 7 rounds with domain 0
 	forkState := *input
 	for i := 0; i < 7; i++ {
@@ -170,8 +138,6 @@ func (ctx *ButterKnifeContextHW) evalSoftware(input *Block) *ButterKnifeOutput {
 
 		// Feed-forward
 		xorBlocks(&branchState, &forkState)
-		output[j] = branchState
+		out[j] = branchState
 	}
-
-	return &output
 }

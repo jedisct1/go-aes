@@ -341,3 +341,18 @@ func BenchmarkButterKnifeContextHWEval(b *testing.B) {
 		ctx.EvalHW(&input)
 	}
 }
+
+// BenchmarkButterKnifeContextBuild benchmarks deriving subtweakeys from a key,
+// which dominates the cost of constructions that rekey frequently.
+func BenchmarkButterKnifeContextBuild(b *testing.B) {
+	var tweakey Tweakey256
+	for i := 0; i < 32; i++ {
+		tweakey[i] = byte(i)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewButterKnifeContextHW(&tweakey)
+	}
+}

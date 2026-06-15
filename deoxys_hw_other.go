@@ -25,38 +25,9 @@ type ButterKnifeContextHW struct {
 	branchSTK [8][9]Block
 }
 
-// NewButterKnifeContextHW creates a context with pre-computed subtweakeys
-func NewButterKnifeContextHW(tweakey *Tweakey256) *ButterKnifeContextHW {
-	ctx := &ButterKnifeContextHW{}
-	rtk := DeoxysExpandTweakey256(tweakey)
-
-	// Pre-compute pre-fork subtweakeys (domain 0, rounds 0-6)
-	for i := 0; i < 7; i++ {
-		rconst := DeoxysRoundConstant(0, i)
-		for j := 0; j < 16; j++ {
-			ctx.preForkSTK[i][j] = rtk.TK1[i][j] ^ rtk.TK2[i][j] ^ rconst[j]
-		}
-	}
-
-	// Pre-compute branch subtweakeys (domains 1-8, rounds 7-15)
-	for branch := 0; branch < 8; branch++ {
-		domain := byte(branch + 1)
-		for r := 0; r < 9; r++ {
-			roundNum := 7 + r
-			rconst := DeoxysRoundConstant(domain, roundNum)
-			for j := 0; j < 16; j++ {
-				ctx.branchSTK[branch][r][j] = rtk.TK1[roundNum][j] ^ rtk.TK2[roundNum][j] ^ rconst[j]
-			}
-		}
-	}
-
-	return ctx
-}
-
-// EvalHW evaluates ButterKnife (software fallback)
-func (ctx *ButterKnifeContextHW) EvalHW(input *Block) *ButterKnifeOutput {
-	var output ButterKnifeOutput
-
+// EvalHWInto evaluates ButterKnife (software fallback), writing the 8 output
+// branches into out without allocating.
+func (ctx *ButterKnifeContextHW) EvalHWInto(input *Block, out *ButterKnifeOutput) {
 	// Pre-fork: 7 rounds with domain 0
 	forkState := *input
 	for i := 0; i < 7; i++ {
@@ -79,8 +50,6 @@ func (ctx *ButterKnifeContextHW) EvalHW(input *Block) *ButterKnifeOutput {
 
 		// Feed-forward
 		xorBlocks(&branchState, &forkState)
-		output[j] = branchState
+		out[j] = branchState
 	}
-
-	return &output
 }

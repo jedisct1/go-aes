@@ -150,6 +150,13 @@ func DeoxysBC256Decrypt(rk *DeoxysBC256RoundKeys, ciphertext *Block) Block {
 // Returns 17 round tweakey states (indices 0-16) using LFSR2.
 func DeoxysExpandTweakey256(tweakey *Tweakey256) *DeoxysRoundTweakeys {
 	rtk := &DeoxysRoundTweakeys{}
+	deoxysExpandTweakey256Into(tweakey, rtk)
+	return rtk
+}
+
+// deoxysExpandTweakey256Into expands a tweakey into a caller-provided buffer so
+// the round tweakeys can live on the stack instead of escaping to the heap.
+func deoxysExpandTweakey256Into(tweakey *Tweakey256, rtk *DeoxysRoundTweakeys) {
 	copy(rtk.TK1[0][:], tweakey[0:16])
 	copy(rtk.TK2[0][:], tweakey[16:32])
 
@@ -160,7 +167,6 @@ func DeoxysExpandTweakey256(tweakey *Tweakey256) *DeoxysRoundTweakeys {
 		DeoxysPermuteTK(&rtk.TK2[i])
 		DeoxysLFSR2(&rtk.TK2[i])
 	}
-	return rtk
 }
 
 // DeoxysRoundConstant generates a round constant with optional domain separation.
