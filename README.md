@@ -33,6 +33,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [MacaKey](#macakey)
     - [Sponge-F](#sponge-f)
     - [UEDT (UEDTDM, UEDTMX)](#uedt-uedtdm-uedtmx)
+    - [ButterKnife Fast-Key-Erasure RNG](#butterknife-fast-key-erasure-rng)
   - [Performance](#performance)
   - [API Reference](#api-reference)
     - [Round Functions](#round-functions)
@@ -562,6 +563,28 @@ pt, err = uedt.DecryptMX(&MK, nonce, ad, ct, tag)
 `DecryptDM` / `DecryptMX` return `uedt.ErrAuthFailure` on tag mismatch, with a constant-time tag comparison.
 
 Reference: ePrint 2026/824 — Guo, Khairallah, Minematsu, *Better Usability: Leakage-Resistant AEADs from Single-length key Blockciphers*
+
+### ButterKnife Fast-Key-Erasure RNG
+
+A forward-secret random generator built from ButterKnife, in the spirit of Bernstein's AES-CTR fast-key-erasure design. Located in `examples/butterrng/`.
+
+Each refill runs eight ButterKnife evaluations under the current 256-bit state. The first two output branches become the next state and the remaining branches are buffered as random output, so the key that produced a block is overwritten before any of it is handed out. The retired state, the derived subtweakeys, and consumed buffer bytes are all wiped as they go, so a later memory compromise cannot reconstruct earlier output. A single ButterKnife context is re-keyed in place, so refills allocate nothing.
+
+```go
+import "github.com/jedisct1/go-aes/examples/butterrng"
+
+// Seed from any 32 bytes (use crypto/rand in practice)
+rng, _ := butterrng.New(seed)
+
+// Or seed straight from an io.Reader
+rng, _ = butterrng.NewFromReader(rand.Reader)
+
+out := make([]byte, 64)
+rng.Fill(out)   // fill a buffer
+rng.Read(out)   // io.Reader; always returns len(out), nil
+```
+
+This is an example construction, not a production RNG: it does not handle process forks, thread safety, or reseeding policy. Because Go offers no guaranteed memory wipe (`explicit_bzero`), the short-lived key schedule built during a refill is only best-effort erased.
 
 ## Performance
 
