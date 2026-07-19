@@ -531,7 +531,7 @@ hash := ctx.Sum(32)
 
 Parameters: rate r = 256 bits, capacity c = 256 bits, Areion512 permutation (b = 512 bits). Minimum output size is 32 bytes.
 
-Reference: ePrint 2025/1006
+Reference: [ePrint 2025/1006](https://eprint.iacr.org/2025/1006.pdf)
 
 ### UEDT (UEDTDM, UEDTMX)
 
