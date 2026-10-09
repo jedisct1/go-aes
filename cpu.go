@@ -28,7 +28,7 @@ func init() {
 func detectCPUFeatures() {
 	CPU.HasAESNI = cpu.X86.HasAES
 	CPU.HasARMCrypto = cpu.ARM64.HasAES
-	CPU.HasVAES = cpu.X86.HasAVX512VAES
+	CPU.HasVAES = hasVAES()
 	CPU.HasAVX2 = cpu.X86.HasAVX2
 	CPU.HasAVX512 = cpu.X86.HasAVX512F
 }
@@ -41,10 +41,10 @@ func UseHardwareAcceleration() bool {
 }
 
 // UseVectorAcceleration returns true if vector AES acceleration (VAES) is
-// available for parallel block processing. This requires VAES support plus
-// either AVX2 (for 2 blocks) or AVX512 (for 4 blocks).
+// available for parallel block processing.
+// Two blocks are processed at once with AVX2, four with AVX512.
 func UseVectorAcceleration() bool {
-	return CPU.HasVAES && (CPU.HasAVX2 || CPU.HasAVX512)
+	return CPU.HasVAES
 }
 
 // OptimalParallelBlocks returns the optimal number of AES blocks that should
@@ -59,7 +59,7 @@ func OptimalParallelBlocks() int {
 	if CPU.HasVAES && CPU.HasAVX512 {
 		return 4
 	}
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		return 2
 	}
 	if CPU.HasARMCrypto {

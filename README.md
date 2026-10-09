@@ -117,7 +117,7 @@ The package detects CPU capabilities at runtime:
 ```go
 aes.CPU.HasAESNI     // Intel AES-NI (single-block)
 aes.CPU.HasARMCrypto // ARM Crypto Extensions
-aes.CPU.HasVAES      // Intel VAES (parallel)
+aes.CPU.HasVAES      // VAES (parallel), Intel Ice Lake / AMD Zen 3 and later
 aes.CPU.HasAVX2      // 2-block parallel with VAES
 aes.CPU.HasAVX512    // 4-block parallel with VAES
 ```

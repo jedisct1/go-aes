@@ -56,7 +56,7 @@ func vaesInvMixColumns4(blocks *Block4)
 
 // Round2HW performs one AES encryption round on 2 blocks with hardware acceleration if available
 func Round2HW(blocks *Block2, roundKeys *Key2) {
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		vaesRound2(blocks, roundKeys)
 	} else {
 		Round2(blocks, roundKeys)
@@ -74,7 +74,7 @@ func Round4HW(blocks *Block4, roundKeys *Key4) {
 
 // FinalRound2HW performs the final AES encryption round on 2 blocks with hardware acceleration if available
 func FinalRound2HW(blocks *Block2, roundKeys *Key2) {
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		vaesFinalRound2(blocks, roundKeys)
 	} else {
 		FinalRound2(blocks, roundKeys)
@@ -92,7 +92,7 @@ func FinalRound4HW(blocks *Block4, roundKeys *Key4) {
 
 // InvRound2HW performs one AES decryption round on 2 blocks with hardware acceleration if available
 func InvRound2HW(blocks *Block2, roundKeys *Key2) {
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		// Software InvRound2 does: InvShiftRows, InvSubBytes, InvMixColumns, AddRoundKey
 		// VAESDEC does the same, so use it directly
 		vaesInvRound2(blocks, roundKeys)
@@ -114,7 +114,7 @@ func InvRound4HW(blocks *Block4, roundKeys *Key4) {
 
 // InvFinalRound2HW performs the final AES decryption round on 2 blocks with hardware acceleration if available
 func InvFinalRound2HW(blocks *Block2, roundKeys *Key2) {
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		vaesInvFinalRound2(blocks, roundKeys)
 	} else {
 		InvFinalRound2(blocks, roundKeys)
@@ -132,7 +132,7 @@ func InvFinalRound4HW(blocks *Block4, roundKeys *Key4) {
 
 // InvMixColumns2HW performs inverse MixColumns on 2 blocks with hardware acceleration if available
 func InvMixColumns2HW(blocks *Block2) {
-	if CPU.HasVAES && CPU.HasAVX2 {
+	if CPU.HasVAES {
 		vaesInvMixColumns2(blocks)
 	} else {
 		b0, b1 := block2Ptrs(blocks)
