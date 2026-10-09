@@ -243,7 +243,8 @@ output512 := aes.AreionSoEM512(&key512, &input512)
 
 ### AES-PRF
 
-Pseudorandom function using AES rounds with feed-forward structure: 4 rounds, XOR with input, then 6 more rounds (5 full + 1 final).
+Pseudorandom function that XORs the AES output with the state after round 4.
+With 192-bit and 256-bit keys, the state is taken after round 6 and round 7, respectively.
 
 ```go
 prf, _ := aes.NewAESPRF(key[:])  // 16, 24, or 32 bytes

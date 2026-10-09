@@ -3,7 +3,7 @@ package aes
 // RoundKeys types for multi-round operations
 type (
 	RoundKeys4  [4]Block  // 4 round keys for 4 rounds
-	RoundKeys6  [6]Block  // 6 round keys for 6 rounds (5 full + 1 final)
+	RoundKeys6  [6]Block  // 6 round keys for 6 rounds
 	RoundKeys7  [7]Block  // 7 round keys for 7 rounds
 	RoundKeys10 [10]Block // 10 round keys for 10 rounds
 	RoundKeys12 [12]Block // 12 round keys for 12 rounds
