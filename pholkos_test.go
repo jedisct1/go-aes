@@ -7,6 +7,25 @@ import (
 	"testing"
 )
 
+func TestPholkosRoundConstantsInitialized(t *testing.T) {
+	var key Pholkos256Key
+	var tweak PholkosTweak
+	want := Block{
+		0x9d, 0x7b, 0x81, 0x75, 0xf0, 0xfe, 0xc5, 0xb2,
+		0x0a, 0xc0, 0x20, 0xe6, 0x4c, 0x70, 0x84, 0x06,
+	}
+
+	ctx256 := NewPholkos256Context(&key, &tweak)
+	if ctx256.rtk[0][0] != want {
+		t.Fatalf("Pholkos-256 round constant is not initialized: got %x, want %x", ctx256.rtk[0][0], want)
+	}
+
+	ctx512 := NewPholkos512Context(&key, &tweak)
+	if ctx512.rtk[0][0] != want {
+		t.Fatalf("Pholkos-512 round constant is not initialized: got %x, want %x", ctx512.rtk[0][0], want)
+	}
+}
+
 func TestPholkos256EncryptDecrypt(t *testing.T) {
 	// Test that encryption followed by decryption returns the original plaintext
 	var key Pholkos256Key

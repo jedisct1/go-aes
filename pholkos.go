@@ -65,11 +65,6 @@ func init() {
 	}
 }
 
-// pholkosRoundConstants are the 128-bit round constants derived from π.
-// These are the same as Haraka v2 round constants.
-// Pholkos-256 uses constants 0-16, Pholkos-512 uses constants 0-20.
-var pholkosRoundConstants = harakaRC128
-
 // applyTau applies the cell permutation τ (πτ) to a 128-bit substate.
 // τ permutes the bytes according to πτ.
 func applyTau(state *Block) {
@@ -128,7 +123,7 @@ func (ctx *Pholkos256Context) Schedule(key *Pholkos256Key, tweak *PholkosTweak) 
 			XorBlock(&ctx.rtk[i][j], &keyState[j], &tweakState)
 		}
 		// Add round constant to first substate only
-		XorBlock(&ctx.rtk[i][0], &ctx.rtk[i][0], (*Block)(&pholkosRoundConstants[i]))
+		XorBlock(&ctx.rtk[i][0], &ctx.rtk[i][0], (*Block)(&harakaRC128[i]))
 
 		// Update key and tweak states for next round
 		if i < numRounds {
@@ -400,7 +395,7 @@ func (ctx *Pholkos512Context) schedule(key *Pholkos512Key, tweak *PholkosTweak) 
 			XorBlock(&ctx.rtk[i][j], &keyState[j], &tweakState)
 		}
 		// Add round constant to first substate only
-		XorBlock(&ctx.rtk[i][0], &ctx.rtk[i][0], (*Block)(&pholkosRoundConstants[i]))
+		XorBlock(&ctx.rtk[i][0], &ctx.rtk[i][0], (*Block)(&harakaRC128[i]))
 
 		// Update key and tweak states for next round
 		if i < numRounds {
