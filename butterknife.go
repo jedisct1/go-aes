@@ -5,7 +5,7 @@ package aes
 // It uses 7 rounds before the fork point and 8 rounds in each of the 8 parallel branches.
 //
 // Based on the paper "Masked Iterate-Fork-Iterate: A new Design Paradigm for
-// Tweakable Expanding Pseudorandom Function" (https://eprint.iacr.org/2021/1534)
+// Tweakable Expanding Pseudorandom Function" (https://eprint.iacr.org/2022/1534)
 
 // ButterKnifeOutput holds the 8 output branches (1024 bits total)
 type ButterKnifeOutput [8]Block

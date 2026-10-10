@@ -305,7 +305,7 @@ output2 := ctx.Eval(&input2)
 
 Structure: 7 rounds before fork (domain 0), then 8 rounds in 8 parallel branches (domains 1-8), with feed-forward XOR.
 
-Reference: ePrint 2021/1534
+Reference: ePrint 2022/1534
 
 ### Pholkos Tweakable Block Cipher
 
