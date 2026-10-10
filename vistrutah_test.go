@@ -16,7 +16,8 @@ func reverseBits(b byte) byte {
 	return result
 }
 
-// Reference test vectors from the C implementation
+// Reference test vectors from C-reference/vistrutah-s2.c and vistrutah-s4.c.
+// Both reference programs use 32-byte keys, regardless of the round count.
 // Key: key[i] = reverseBits(i+1)
 // Plaintext: plaintext[i] = i
 
@@ -58,31 +59,43 @@ func TestVistrutah256ReferenceVectors(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var ciphertext [32]byte
-			var decrypted [32]byte
+			for _, backend := range []struct {
+				name    string
+				encrypt func([]byte, []byte, []byte, int)
+				decrypt func([]byte, []byte, []byte, int)
+			}{
+				{"software", Vistrutah256Encrypt, Vistrutah256Decrypt},
+				{"hardware", Vistrutah256EncryptHW, Vistrutah256DecryptHW},
+			} {
+				t.Run(backend.name, func(t *testing.T) {
+					if backend.name == "hardware" && !CPU.HasAESNI && !CPU.HasARMCrypto {
+						t.Skip("no hardware AES support")
+					}
+					var ciphertext, decrypted [32]byte
+					backend.encrypt(plaintext[:], ciphertext[:], key[:], tc.rounds)
+					if ciphertext != tc.expected {
+						t.Errorf("encryption mismatch:\n  got:      %x\n  expected: %x", ciphertext, tc.expected)
+					}
 
-			// Encrypt
-			Vistrutah256Encrypt(plaintext[:], ciphertext[:], key[:], tc.rounds)
-
-			if !bytes.Equal(ciphertext[:], tc.expected[:]) {
-				t.Errorf("encryption mismatch:\n  got:      %x\n  expected: %x", ciphertext, tc.expected)
-			}
-
-			// Decrypt and verify round-trip
-			Vistrutah256Decrypt(ciphertext[:], decrypted[:], key[:], tc.rounds)
-
-			if !bytes.Equal(decrypted[:], plaintext[:]) {
-				t.Errorf("decryption mismatch:\n  got:      %x\n  expected: %x", decrypted, plaintext)
+					// Decrypt the reference ciphertext independently of our encryption.
+					backend.decrypt(tc.expected[:], decrypted[:], key[:], tc.rounds)
+					if decrypted != plaintext {
+						t.Errorf("decryption mismatch:\n  got:      %x\n  expected: %x", decrypted, plaintext)
+					}
+				})
 			}
 		})
 	}
 }
 
+// The 64-byte-key vectors use the reference implementation's vistrutah-s4.c
+// with its key duplication and KEXP replaced by copying all 64 key bytes,
+// as specified in Section 3.4 and Algorithm 1 of https://eprint.iacr.org/2025/976.
 func TestVistrutah512ReferenceVectors(t *testing.T) {
 	// Prepare key and plaintext
-	var key [32]byte
+	var key [64]byte
 	var plaintext [64]byte
-	for i := 0; i < 32; i++ {
+	for i := range key {
 		key[i] = reverseBits(byte(i + 1))
 	}
 	for i := 0; i < 64; i++ {
@@ -91,12 +104,14 @@ func TestVistrutah512ReferenceVectors(t *testing.T) {
 
 	tests := []struct {
 		name     string
+		keySize  int
 		rounds   int
 		expected [64]byte
 	}{
 		{
-			name:   "10 rounds, 256-bit key (ROUNDS_SHORT_256KEY)",
-			rounds: Vistrutah512RoundsShort256Key,
+			name:    "10 rounds, 256-bit key (ROUNDS_SHORT_256KEY)",
+			keySize: 32,
+			rounds:  Vistrutah512RoundsShort256Key,
 			expected: [64]byte{
 				0x09, 0xC3, 0x87, 0x69, 0x84, 0x35, 0x50, 0x41, 0xA4, 0x9A,
 				0xCF, 0x0C, 0xB8, 0x68, 0xE2, 0x64, 0x58, 0x52, 0x35, 0xE0,
@@ -108,8 +123,9 @@ func TestVistrutah512ReferenceVectors(t *testing.T) {
 			},
 		},
 		{
-			name:   "12 rounds, 256-bit key (ROUNDS_SHORT_512KEY)",
-			rounds: Vistrutah512RoundsShort512Key,
+			name:    "12 rounds, 256-bit key (ROUNDS_SHORT_512KEY)",
+			keySize: 32,
+			rounds:  Vistrutah512RoundsShort512Key,
 			expected: [64]byte{
 				0xA6, 0x90, 0x27, 0x48, 0xC6, 0xF1, 0xF9, 0x33, 0x3C, 0xA6,
 				0x12, 0xB8, 0x5F, 0x86, 0x56, 0x1F, 0xD0, 0x46, 0x62, 0xE3,
@@ -121,8 +137,9 @@ func TestVistrutah512ReferenceVectors(t *testing.T) {
 			},
 		},
 		{
-			name:   "14 rounds, 256-bit key (ROUNDS_LONG_256KEY)",
-			rounds: Vistrutah512RoundsLong256Key,
+			name:    "14 rounds, 256-bit key (ROUNDS_LONG_256KEY)",
+			keySize: 32,
+			rounds:  Vistrutah512RoundsLong256Key,
 			expected: [64]byte{
 				0xA8, 0x75, 0xE9, 0xF9, 0x13, 0x0B, 0xE6, 0x8B, 0x68, 0x67,
 				0xCB, 0x66, 0xF4, 0x03, 0x18, 0xEC, 0x7E, 0x16, 0xA3, 0xA0,
@@ -134,8 +151,9 @@ func TestVistrutah512ReferenceVectors(t *testing.T) {
 			},
 		},
 		{
-			name:   "18 rounds, 256-bit key (ROUNDS_LONG_512KEY)",
-			rounds: Vistrutah512RoundsLong512Key,
+			name:    "18 rounds, 256-bit key (ROUNDS_LONG_512KEY)",
+			keySize: 32,
+			rounds:  Vistrutah512RoundsLong512Key,
 			expected: [64]byte{
 				0x6D, 0x7F, 0x18, 0x33, 0x6B, 0x35, 0xED, 0x4D, 0x78, 0x5D,
 				0xF2, 0x2D, 0xCE, 0x13, 0x49, 0x35, 0xAF, 0x3F, 0xC1, 0x4F,
@@ -146,25 +164,72 @@ func TestVistrutah512ReferenceVectors(t *testing.T) {
 				0xBD, 0x26, 0x61, 0x13,
 			},
 		},
+		{
+			name:    "12 rounds, 512-bit key",
+			keySize: 64,
+			rounds:  Vistrutah512RoundsShort512Key,
+			expected: [64]byte{
+				0x0C, 0x7E, 0x4D, 0x93, 0xEC, 0xEA, 0x24, 0x6B,
+				0x9F, 0xCB, 0xA6, 0x33, 0x1F, 0x2F, 0x31, 0xDA,
+				0x03, 0x34, 0x35, 0xC0, 0xDE, 0x5A, 0x46, 0x57,
+				0xFD, 0x9F, 0x72, 0x89, 0xF5, 0xB4, 0x8A, 0xDD,
+				0x2B, 0xA9, 0x91, 0x9D, 0xFB, 0x37, 0x99, 0xEE,
+				0xA8, 0x53, 0xD3, 0xE3, 0x51, 0x6B, 0xA8, 0x0F,
+				0x79, 0x5C, 0x7F, 0x13, 0x8B, 0xCA, 0xE3, 0x00,
+				0xA3, 0x2F, 0x12, 0xDD, 0x2E, 0xAF, 0xD0, 0x6D,
+			},
+		},
+		{
+			name:    "18 rounds, 512-bit key",
+			keySize: 64,
+			rounds:  Vistrutah512RoundsLong512Key,
+			expected: [64]byte{
+				0x38, 0x3D, 0xEA, 0xDE, 0x95, 0x1E, 0x05, 0x94,
+				0x8F, 0xAD, 0x5E, 0x11, 0x90, 0x98, 0x54, 0xD4,
+				0xB3, 0x54, 0xCA, 0xDD, 0x06, 0xD4, 0xDC, 0x97,
+				0xA0, 0x60, 0xCF, 0x5C, 0x34, 0x50, 0xF7, 0xEE,
+				0x20, 0x6A, 0xFB, 0x26, 0x81, 0xD9, 0x82, 0x01,
+				0xDD, 0xB9, 0x36, 0x10, 0x36, 0x0D, 0x5A, 0x9B,
+				0x65, 0x46, 0xBE, 0xE5, 0xF6, 0x85, 0xD2, 0x44,
+				0x4D, 0xAD, 0x1F, 0xF0, 0xEA, 0xD1, 0xBC, 0x7A,
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var ciphertext [64]byte
-			var decrypted [64]byte
-
-			// Encrypt
-			Vistrutah512Encrypt(plaintext[:], ciphertext[:], key[:], tc.rounds)
-
-			if !bytes.Equal(ciphertext[:], tc.expected[:]) {
-				t.Errorf("encryption mismatch:\n  got:      %x\n  expected: %x", ciphertext, tc.expected)
+			// MP must use the corrected encryption and the supplied key for feed-forward.
+			wantMP := tc.expected
+			for i := range wantMP {
+				wantMP[i] ^= plaintext[i] ^ key[i%tc.keySize]
 			}
+			if got := Vistrutah512MP(&plaintext, key[:tc.keySize], tc.rounds); got != wantMP {
+				t.Errorf("MP mismatch: got %x, expected %x", got, wantMP)
+			}
+			for _, backend := range []struct {
+				name    string
+				encrypt func([]byte, []byte, []byte, int)
+				decrypt func([]byte, []byte, []byte, int)
+			}{
+				{"software", Vistrutah512Encrypt, Vistrutah512Decrypt},
+				{"hardware", Vistrutah512EncryptHW, Vistrutah512DecryptHW},
+			} {
+				t.Run(backend.name, func(t *testing.T) {
+					if backend.name == "hardware" && !CPU.HasAESNI && !CPU.HasARMCrypto {
+						t.Skip("no hardware AES support")
+					}
+					var ciphertext, decrypted [64]byte
+					backend.encrypt(plaintext[:], ciphertext[:], key[:tc.keySize], tc.rounds)
+					if ciphertext != tc.expected {
+						t.Errorf("encryption mismatch:\n  got:      %x\n  expected: %x", ciphertext, tc.expected)
+					}
 
-			// Decrypt and verify round-trip
-			Vistrutah512Decrypt(ciphertext[:], decrypted[:], key[:], tc.rounds)
-
-			if !bytes.Equal(decrypted[:], plaintext[:]) {
-				t.Errorf("decryption mismatch:\n  got:      %x\n  expected: %x", decrypted, plaintext)
+					// Decrypt the reference ciphertext independently of our encryption.
+					backend.decrypt(tc.expected[:], decrypted[:], key[:tc.keySize], tc.rounds)
+					if decrypted != plaintext {
+						t.Errorf("decryption mismatch:\n  got:      %x\n  expected: %x", decrypted, plaintext)
+					}
+				})
 			}
 		})
 	}
@@ -366,9 +431,9 @@ func TestVistrutah512MP(t *testing.T) {
 		key[i] = byte(i + 0x80)
 	}
 
-	// 64-byte key, long rounds
+	// 64-byte key, long rounds; derived with the same adaptation as the vectors above.
 	out := Vistrutah512MP(&input, key[:], Vistrutah512RoundsLong512Key)
-	expected, _ := hex.DecodeString("deb7b6d3560e9e948043ab5abfc450986a7b7b5358b1b269e64c1ad70c84212745b8b16dbb1487710b9c0873b4ff3331e7302a8e2e650836312cb763f2136253")
+	expected, _ := hex.DecodeString("fe18a8b90c421c7248ebe1eed3eef2c5746cef0ad343d7183983d41e7c271a404dae091a2cc2c5956bb13a1b66ddda9381b05d915e0dcee96544cffc4952dd85")
 	if !bytes.Equal(out[:], expected) {
 		t.Errorf("Vistrutah512MP long 64key failed\nGot:      %x\nExpected: %x", out[:], expected)
 	}

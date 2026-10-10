@@ -2,7 +2,9 @@ package aes
 
 // Vistrutah is a large-block cipher family providing 256-bit and 512-bit block sizes.
 // It uses the Generalized Even-Mansour construction based on AES round functions.
-// Reference: https://eprint.iacr.org/2024/1534
+// Reference: https://eprint.iacr.org/2025/976
+// Use the long-round variants for general-purpose use, including the MP helpers.
+// Short-round variants are intended for the restricted settings of HCTR2/ForkCipher.
 
 const (
 	Vistrutah256BlockSize = 32
@@ -299,7 +301,10 @@ func invMixingLayer512(s0, s1, s2, s3 *Block) {
 }
 
 // Vistrutah256Encrypt encrypts a 32-byte plaintext block using Vistrutah-256.
-// Key must be 16 or 32 bytes. Rounds should be Vistrutah256RoundsShort (10) or Vistrutah256RoundsLong (14).
+// Key must be 16 or 32 bytes. The reference implementation uses 32-byte keys; accepting a
+// 16-byte key and repeating it is an extension provided by this library.
+// Use Vistrutah256RoundsLong (14) for general-purpose use.
+// Vistrutah256RoundsShort (10) is intended for HCTR2/ForkCipher settings.
 func Vistrutah256Encrypt(plaintext, ciphertext, key []byte, rounds int) {
 	if len(plaintext) != 32 || len(ciphertext) != 32 {
 		panic("vistrutah256: plaintext and ciphertext must be 32 bytes")
@@ -389,6 +394,7 @@ func Vistrutah256Encrypt(plaintext, ciphertext, key []byte, rounds int) {
 }
 
 // Vistrutah256Decrypt decrypts a 32-byte ciphertext block using Vistrutah-256.
+// Key sizes and round counts are as described in Vistrutah256Encrypt.
 func Vistrutah256Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 	if len(plaintext) != 32 || len(ciphertext) != 32 {
 		panic("vistrutah256: plaintext and ciphertext must be 32 bytes")
@@ -493,7 +499,10 @@ func Vistrutah256Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 }
 
 // Vistrutah512Encrypt encrypts a 64-byte plaintext block using Vistrutah-512.
-// Key must be 32 or 64 bytes.
+// Key must be 32 or 64 bytes. A 32-byte key is expanded to key || KEXP(key).
+// A 64-byte key is used directly, as specified in Section 3.4 of the paper.
+// Use Vistrutah512RoundsLong256Key (14) or Vistrutah512RoundsLong512Key (18)
+// for general-purpose use, according to the key size.
 func Vistrutah512Encrypt(plaintext, ciphertext, key []byte, rounds int) {
 	if len(plaintext) != 64 || len(ciphertext) != 64 {
 		panic("vistrutah512: plaintext and ciphertext must be 64 bytes")
@@ -515,18 +524,12 @@ func Vistrutah512Encrypt(plaintext, ciphertext, key []byte, rounds int) {
 	copy(s2[:], plaintext[32:48])
 	copy(s3[:], plaintext[48:64])
 
+	copy(fixedKey[:], key)
 	if len(key) == 32 {
-		copy(fixedKey[:32], key)
-		copy(fixedKey[32:], key)
-	} else {
-		copy(fixedKey[:], key)
-	}
-
-	// Apply KEXP shuffle to second half
-	var temp [32]byte
-	copy(temp[:], fixedKey[32:64])
-	for i := 0; i < 32; i++ {
-		fixedKey[32+i] = temp[vistrutahKexpShuffle[i]]
+		// Expand only 256-bit keys; 512-bit keys are used as supplied.
+		for i, j := range vistrutahKexpShuffle {
+			fixedKey[32+i] = key[j]
+		}
 	}
 
 	// Initialize round key: interleave halves
@@ -623,6 +626,7 @@ func Vistrutah512Encrypt(plaintext, ciphertext, key []byte, rounds int) {
 }
 
 // Vistrutah512Decrypt decrypts a 64-byte ciphertext block using Vistrutah-512.
+// Key sizes and round counts are as described in Vistrutah512Encrypt.
 func Vistrutah512Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 	if len(plaintext) != 64 || len(ciphertext) != 64 {
 		panic("vistrutah512: plaintext and ciphertext must be 64 bytes")
@@ -644,18 +648,12 @@ func Vistrutah512Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 	copy(s2[:], ciphertext[32:48])
 	copy(s3[:], ciphertext[48:64])
 
+	copy(fixedKey[:], key)
 	if len(key) == 32 {
-		copy(fixedKey[:32], key)
-		copy(fixedKey[32:], key)
-	} else {
-		copy(fixedKey[:], key)
-	}
-
-	// Apply KEXP shuffle to second half
-	var temp [32]byte
-	copy(temp[:], fixedKey[32:64])
-	for i := 0; i < 32; i++ {
-		fixedKey[32+i] = temp[vistrutahKexpShuffle[i]]
+		// Expand only 256-bit keys; 512-bit keys are used as supplied.
+		for i, j := range vistrutahKexpShuffle {
+			fixedKey[32+i] = key[j]
+		}
 	}
 
 	// Initialize round key: interleave halves
@@ -776,36 +774,36 @@ func Vistrutah512Decrypt(ciphertext, plaintext, key []byte, rounds int) {
 	copy(plaintext[48:64], s3[:])
 }
 
-// Vistrutah256MP computes a keyed hash using the Miyaguchi-Preneel construction:
-// h = E(k, X) XOR k XOR X. This is one of the 12 provably secure PGV compression
-// functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+// Vistrutah256MP computes h = E(k, X) XOR k' XOR X, where k' is the key
+// repeated to fill the block. It uses Miyaguchi-Preneel-style feed-forward.
 // Input is a fixed 32-byte block, key must be 16 or 32 bytes.
-// Returns a 32-byte digest.
+// Returns a 32-byte digest. Use Vistrutah256RoundsLong.
 func Vistrutah256MP(input *[32]byte, key []byte, rounds int) [32]byte {
 	var ct [32]byte
 	Vistrutah256Encrypt(input[:], ct[:], key, rounds)
 	for i := range ct {
 		ct[i] ^= input[i]
 	}
-	// XOR expanded key (16-byte keys are doubled to 32 by Vistrutah256Encrypt)
+	// XOR the supplied key, repeating it to fill the block.
 	for i := range ct {
 		ct[i] ^= key[i%len(key)]
 	}
 	return ct
 }
 
-// Vistrutah512MP computes a keyed hash using the Miyaguchi-Preneel construction:
-// h = E(k, X) XOR k XOR X. This is one of the 12 provably secure PGV compression
-// functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+// Vistrutah512MP computes h = E(k, X) XOR k' XOR X, where k' is the key
+// repeated to fill the block. It uses Miyaguchi-Preneel-style feed-forward.
+// For 32-byte keys, feed-forward repeats the key without applying KEXP.
 // Input is a fixed 64-byte block, key must be 32 or 64 bytes.
-// Returns a 64-byte digest.
+// Returns a 64-byte digest. Use Vistrutah512RoundsLong256Key or
+// Vistrutah512RoundsLong512Key, according to the key size.
 func Vistrutah512MP(input *[64]byte, key []byte, rounds int) [64]byte {
 	var ct [64]byte
 	Vistrutah512Encrypt(input[:], ct[:], key, rounds)
 	for i := range ct {
 		ct[i] ^= input[i]
 	}
-	// XOR expanded key (32-byte keys are doubled to 64 by Vistrutah512Encrypt)
+	// XOR the supplied key, repeating it to fill the block.
 	for i := range ct {
 		ct[i] ^= key[i%len(key)]
 	}

@@ -345,8 +345,6 @@ For single-block operations, convenience functions are available: `Pholkos256Enc
 
 ### Vistrutah Large-Block Cipher
 
-Large-block cipher family using Generalized Even-Mansour construction.
-
 Vistrutah-256 (32-byte blocks):
 
 ```go
@@ -376,9 +374,11 @@ Round options:
 | Vistrutah-512 (256-bit key) | 10    | 14   |
 | Vistrutah-512 (512-bit key) | 12    | 18   |
 
-Reference: ePrint 2024/1534
+Use the long-round variants for general-purpose encryption and the MP helpers. The short-round variants are intended for the restricted settings of HCTR2/ForkCipher constructions.
 
-**Vistrutah-MP**: Keyed fixed-input hash functions using the Miyaguchi-Preneel construction (`h = E(k, X) XOR k XOR X`), one of the 12 provably secure PGV compression functions (Black-Rogaway-Shrimpton, CRYPTO 2002).
+Reference: [The Large Block Cipher Family Vistrutah, ePrint 2025/976](https://eprint.iacr.org/2025/976)
+
+**Vistrutah-MP**: Fixed-input helpers with Miyaguchi-Preneel-style feed-forward: `h = E(k, X) XOR k' XOR X`, where `k'` is the supplied key repeated to fill the block. For Vistrutah-512 with a 32-byte key, feed-forward repeats the key without applying `KEXP`.
 
 ```go
 var input [32]byte

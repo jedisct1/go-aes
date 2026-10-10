@@ -364,13 +364,14 @@ TEXT ·vistrutah512EncryptAsm(SB), NOSPLIT, $160-56
 	VST1 [V16.B16, V17.B16], (RSP)
 	ADD $32, RSP, R8
 	VST1 [V16.B16, V17.B16], (R8)
-	B enc512_key_done_arm
+	B enc512_key_expand_arm
 enc512_key64_arm:
 	VLD1.P 64(R2), [V16.B16, V17.B16, V18.B16, V19.B16]
 	VST1 [V16.B16, V17.B16], (RSP)
 	ADD $32, RSP, R8
 	VST1 [V18.B16, V19.B16], (R8)
-enc512_key_done_arm:
+	B enc512_key_done_arm
+enc512_key_expand_arm:
 
 	// Apply KEXP_SHUFFLE to fixed_key[32:64]
 	// Load shuffle table (32 bytes)
@@ -401,6 +402,7 @@ enc512_key_done_arm:
 	// Store shuffled result back to fixed_key[32:64]
 	VST1 [V20.B16, V21.B16], (R8)
 
+enc512_key_done_arm:
 	// Load full fixed_key
 	VLD1 (RSP), [V16.B16, V17.B16]
 	ADD $32, RSP, R8
@@ -582,13 +584,14 @@ TEXT ·vistrutah512DecryptAsm(SB), NOSPLIT, $160-56
 	VST1 [V16.B16, V17.B16], (RSP)
 	ADD $32, RSP, R8
 	VST1 [V16.B16, V17.B16], (R8)
-	B dec512_key_done_arm
+	B dec512_key_expand_arm
 dec512_key64_arm:
 	VLD1.P 64(R2), [V16.B16, V17.B16, V18.B16, V19.B16]
 	VST1 [V16.B16, V17.B16], (RSP)
 	ADD $32, RSP, R8
 	VST1 [V18.B16, V19.B16], (R8)
-dec512_key_done_arm:
+	B dec512_key_done_arm
+dec512_key_expand_arm:
 
 	// Apply KEXP_SHUFFLE
 	VLD1 (R6), [V24.B16, V25.B16]
@@ -598,6 +601,7 @@ dec512_key_done_arm:
 	VTBL V25.B16, [V18.B16, V19.B16], V21.B16
 	VST1 [V20.B16, V21.B16], (R8)
 
+dec512_key_done_arm:
 	// Load fixed_key
 	VLD1 (RSP), [V16.B16, V17.B16]
 	ADD $32, RSP, R8

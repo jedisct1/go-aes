@@ -345,7 +345,7 @@ TEXT ·vistrutah512EncryptAsm(SB), NOSPLIT, $128-56
 	MOVOU X9, 16(SP)
 	MOVOU X8, 32(SP)
 	MOVOU X9, 48(SP)
-	JMP enc512_key_done
+	JMP enc512_key_expand
 enc512_key64:
 	MOVOU (CX), X8
 	MOVOU 16(CX), X9
@@ -355,7 +355,8 @@ enc512_key64:
 	MOVOU X9, 16(SP)
 	MOVOU X10, 32(SP)
 	MOVOU X11, 48(SP)
-enc512_key_done:
+	JMP enc512_key_done
+enc512_key_expand:
 
 	// Apply KEXP_SHUFFLE to fixed_key[32:64]
 	// KEXP_SHUFFLE is a 32-byte permutation: output[i] = input[KEXP_SHUFFLE[i]]
@@ -384,12 +385,13 @@ enc512_key_done:
 	MOVOU X12, 32(SP)     // fixed_key[32:48] = out0
 	MOVOU X14, 48(SP)     // fixed_key[48:64] = out1
 
-	// Set up round_key from shuffled fixed_key:
+enc512_key_done:
+	// Set up round_key from fixed_key:
 	// round_key = {fk[16:32], fk[0:16], fk[48:64], fk[32:48]}
 	MOVOU 16(SP), X10     // round_key[0:16] = fixed_key[16:32]
 	MOVOU 0(SP), X11      // round_key[16:32] = fixed_key[0:16]
-	MOVOU 48(SP), X12     // round_key[32:48] = fixed_key[48:64] (shuffled)
-	MOVOU 32(SP), X13     // round_key[48:64] = fixed_key[32:48] (shuffled)
+	MOVOU 48(SP), X12     // round_key[32:48] = fixed_key[48:64]
+	MOVOU 32(SP), X13     // round_key[48:64] = fixed_key[32:48]
 	MOVOU X10, 64(SP)
 	MOVOU X11, 80(SP)
 	MOVOU X12, 96(SP)
@@ -565,7 +567,7 @@ TEXT ·vistrutah512DecryptAsm(SB), NOSPLIT, $128-56
 	MOVOU X9, 16(SP)
 	MOVOU X8, 32(SP)
 	MOVOU X9, 48(SP)
-	JMP dec512_key_done
+	JMP dec512_key_expand
 dec512_key64:
 	MOVOU (CX), X8
 	MOVOU 16(CX), X9
@@ -575,7 +577,8 @@ dec512_key64:
 	MOVOU X9, 16(SP)
 	MOVOU X10, 32(SP)
 	MOVOU X11, 48(SP)
-dec512_key_done:
+	JMP dec512_key_done
+dec512_key_expand:
 
 	// Apply KEXP_SHUFFLE to fixed_key[32:64] (same as encryption)
 	MOVOU 32(SP), X8      // lo = fixed_key[32:48]
@@ -598,11 +601,12 @@ dec512_key_done:
 	MOVOU X12, 32(SP)     // fixed_key[32:48] = out0
 	MOVOU X14, 48(SP)     // fixed_key[48:64] = out1
 
-	// Set up round_key from shuffled fixed_key
+dec512_key_done:
+	// Set up round_key from fixed_key
 	MOVOU 16(SP), X10     // round_key[0:16] = fixed_key[16:32]
 	MOVOU 0(SP), X11      // round_key[16:32] = fixed_key[0:16]
-	MOVOU 48(SP), X12     // round_key[32:48] = fixed_key[48:64] (shuffled)
-	MOVOU 32(SP), X13     // round_key[48:64] = fixed_key[32:48] (shuffled)
+	MOVOU 48(SP), X12     // round_key[32:48] = fixed_key[48:64]
+	MOVOU 32(SP), X13     // round_key[48:64] = fixed_key[32:48]
 	MOVOU X10, 64(SP)
 	MOVOU X11, 80(SP)
 	MOVOU X12, 96(SP)
