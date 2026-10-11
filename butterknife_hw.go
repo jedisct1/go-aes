@@ -1,5 +1,7 @@
 package aes
 
+import "runtime"
+
 // NewButterKnifeContextHW creates a context with pre-computed subtweakeys for
 // hardware-accelerated ButterKnife evaluation.
 func NewButterKnifeContextHW(tweakey *Tweakey256) *ButterKnifeContextHW {
@@ -12,13 +14,23 @@ func NewButterKnifeContextHW(tweakey *Tweakey256) *ButterKnifeContextHW {
 // allocating. A single context can be reused across many keys, which is what
 // makes frequent rekeying (as in fast-key-erasure constructions) cheap: the
 // caller pays for one allocation up front and only the key schedule afterwards.
+// Temporary key-schedule buffers are cleared before returning, on a best-effort basis.
+// Go does not guarantee that no other copies remain.
 func (ctx *ButterKnifeContextHW) Reset(tweakey *Tweakey256) {
 	var rtk DeoxysRoundTweakeys
+	var tkSum [16]Block
+	defer func() {
+		clear(rtk.TK1[:])
+		clear(rtk.TK2[:])
+		clear(tkSum[:])
+		runtime.KeepAlive(&rtk)
+		runtime.KeepAlive(&tkSum)
+	}()
+
 	deoxysExpandTweakey256Into(tweakey, &rtk)
 
 	// TK1 ^ TK2 is shared by every branch at a given round, so fold it once per
 	// round instead of recomputing it eight times in the branch loop below.
-	var tkSum [16]Block
 	for r := range tkSum {
 		tkSum[r] = rtk.TK1[r]
 		xorBlocks(&tkSum[r], &rtk.TK2[r])

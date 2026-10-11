@@ -561,7 +561,7 @@ Reference: ePrint 2026/824 — Guo, Khairallah, Minematsu, *Better Usability: Le
 
 A forward-secret random generator built from ButterKnife, in the spirit of Bernstein's AES-CTR fast-key-erasure design. Located in `examples/butterrng/`.
 
-Each refill runs eight ButterKnife evaluations under the current 256-bit state. The first two output branches become the next state and the remaining branches are buffered as random output, so the key that produced a block is overwritten before any of it is handed out. The retired state, the derived subtweakeys, and consumed buffer bytes are all wiped as they go, so a later memory compromise cannot reconstruct earlier output. A single ButterKnife context is re-keyed in place, so refills allocate nothing.
+Each refill runs eight ButterKnife evaluations under the current 256-bit state. The first two output branches become the next state and the remaining branches are buffered as random output, so the key that produced a block is overwritten before any of it is handed out. The retired state, the derived subtweakeys, and consumed buffer bytes are wiped on a best-effort basis. A single ButterKnife context is re-keyed in place, so refills allocate nothing.
 
 ```go
 import "github.com/jedisct1/go-aes/examples/butterrng"

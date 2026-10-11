@@ -1,9 +1,8 @@
 // Package butterrng demonstrates a fast-key-erasure RNG built from ButterKnife.
 //
-// After each refill the retired state, the expanded subtweakeys, and the
-// consumed output bytes are all wiped, so a later memory compromise cannot
-// reconstruct earlier output. The RNG keeps a single ButterKnife context and
-// re-keys it in place, so a refill allocates nothing.
+// The RNG clears retired state, context subtweakeys, and consumed output bytes
+// to limit exposure of earlier output after a memory compromise.
+// The RNG keeps a single ButterKnife context and re-keys it in place, so a refill allocates nothing.
 //
 // This is an example construction, not a production RNG. It does not handle
 // process forks, thread safety, or reseeding policy, and Go gives no guarantee
