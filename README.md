@@ -29,7 +29,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
     - [Cymric](#cymric)
     - [LeMac](#lemac)
     - [Skye KDF](#skye-kdf)
-    - [MacaKey](#macakey)
+    - [KeyMacaKey](#keymacakey)
     - [Sponge-F](#sponge-f)
     - [UEDT (UEDTDM, UEDTMX)](#uedt-uedtdm-uedtmx)
     - [ButterKnife Fast-Key-Erasure RNG](#butterknife-fast-key-erasure-rng)
@@ -226,6 +226,14 @@ pt512 := aes.Areion512EMDecrypt(&key64, &ct512)
 
 Pseudorandom function that XORs the AES output with the state after round 4.
 With 192-bit and 256-bit keys, the state is taken after round 6 and round 7, respectively.
+
+The construction is from Mennink and Neves, but their AES-PRF-128 instance uses round 5.
+This implementation instead uses round 4 for 128-bit keys, following the analysis of Derbez et al.
+Its 128-bit-key outputs therefore differ from Mennink and Neves's AES-PRF-128.
+
+References:
+- Mennink and Neves, ["Optimal PRFs from Blockcipher Designs"](https://doi.org/10.13154/tosc.v2017.i3.228-252), ToSC 2017(3).
+- Derbez et al., ["Cryptanalysis of AES-PRF and Its Dual"](https://doi.org/10.13154/tosc.v2018.i2.161-191), ToSC 2018(2).
 
 ```go
 prf, _ := aes.NewAESPRF(key[:])  // 16, 24, or 32 bytes
@@ -459,32 +467,35 @@ key1 := ctx.Expand(&info1, 32)
 key2 := ctx.Expand(&info2, 32)
 ```
 
-Reference: ePrint 2024/781
+Reference: ["Skye: An Expanding PRF based Fast KDF and its Applications"](https://eprint.iacr.org/2023/781), ePrint 2023/781.
 
-### MacaKey
+### KeyMacaKey
 
-Full-state keyed sponge PRF/MAC using Areion512. Located in `examples/macakey/`.
+KeyMacaKey is a full-state keyed sponge PRF and MAC using Areion512. Located in `examples/macakey/`.
+
+It absorbs 64 bytes and outputs 64 bytes per permutation call. It fixes MacaKey, which has a four-query forgery, by adding the key to the last padded block. The same attack also breaks MacaKey V2, so this example doesn't implement V2.
 
 ```go
 import "github.com/jedisct1/go-aes/examples/macakey"
 
-var key [32]byte
-copy(key[:], keyBytes)
-
-// One-shot MAC
-mac, _ := macakey.Macakey(key[:], message, 32)
+// One-shot MAC with a 32-byte key
+mac, _ := macakey.KeyMacaKey(key, message, 32)
 
 // Streaming
-ctx, _ := macakey.NewMacakeyContext(key[:])
+ctx, _ := macakey.NewKeyMacaKeyContext(key)
 ctx.Write(chunk1)
 ctx.Write(chunk2)
-mac := ctx.Sum(32)
+mac = ctx.Sum(32)
 
-// With explicit IV (32 bytes)
-mac, _ := macakey.MacakeyWithIV(key[:], iv, message, 32)
+// With an explicit 32-byte IV
+mac, _ = macakey.KeyMacaKeyWithIV(key, iv, message, 32)
 ```
 
-Based on MacaKey V2 with NCP-based domain separation. Provides 128-bit security.
+`Sum` and `Read` move forward in the output. Call `Clone` first if you need the same bytes again.
+
+References:
+- Lefevre and Marhuenda Beltrán, ["MacaKey: Full-State Keyed Sponge Meets the Summation-Truncation Hybrid"](https://eprint.iacr.org/2025/893).
+- Bhaumik, Chakraborty and Dhar, ["Breaking and Fixing MacaKey"](https://eprint.iacr.org/2025/2038), which introduces KeyMacaKey.
 
 ### Sponge-F
 
