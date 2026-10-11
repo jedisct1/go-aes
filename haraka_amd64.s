@@ -1,3 +1,5 @@
+//go:build !purego
+
 // Haraka v2 AES-NI hardware acceleration for AMD64
 #include "textflag.h"
 

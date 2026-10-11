@@ -1,6 +1,9 @@
 package aes
 
-import "unsafe"
+import (
+	"encoding/binary"
+	"unsafe"
+)
 
 // Block represents a 128-bit AES block (16 bytes)
 type Block [16]byte
@@ -168,10 +171,7 @@ func InvMixColumns(block *Block) {
 
 // AddRoundKey XORs the block with the round key.
 func AddRoundKey(block *Block, roundKey *Block) {
-	b := (*[2]uint64)(unsafe.Pointer(block))
-	k := (*[2]uint64)(unsafe.Pointer(roundKey))
-	b[0] ^= k[0]
-	b[1] ^= k[1]
+	XorBlock(block, block, roundKey)
 }
 
 // Round performs SubBytes, ShiftRows, MixColumns, AddRoundKey.
@@ -447,35 +447,21 @@ func EncryptBlocksAES256(blocks []Block, ks *KeySchedule) {
 
 // XorBlock computes dst = a XOR b.
 func XorBlock(dst, a, b *Block) {
-	aPtr := (*[2]uint64)(unsafe.Pointer(a))
-	bPtr := (*[2]uint64)(unsafe.Pointer(b))
-	dstPtr := (*[2]uint64)(unsafe.Pointer(dst))
-	dstPtr[0] = aPtr[0] ^ bPtr[0]
-	dstPtr[1] = aPtr[1] ^ bPtr[1]
+	// Byte arrays have no word alignment guarantee. encoding/binary handles unaligned accesses on every architecture.
+	binary.LittleEndian.PutUint64(dst[:8], binary.LittleEndian.Uint64(a[:8])^binary.LittleEndian.Uint64(b[:8]))
+	binary.LittleEndian.PutUint64(dst[8:], binary.LittleEndian.Uint64(a[8:])^binary.LittleEndian.Uint64(b[8:]))
 }
 
 // XorBlock2 computes dst = a XOR b for Block2.
 func XorBlock2(dst, a, b *Block2) {
-	aPtr := (*[4]uint64)(unsafe.Pointer(a))
-	bPtr := (*[4]uint64)(unsafe.Pointer(b))
-	dstPtr := (*[4]uint64)(unsafe.Pointer(dst))
-	dstPtr[0] = aPtr[0] ^ bPtr[0]
-	dstPtr[1] = aPtr[1] ^ bPtr[1]
-	dstPtr[2] = aPtr[2] ^ bPtr[2]
-	dstPtr[3] = aPtr[3] ^ bPtr[3]
+	XorBlock((*Block)(dst[:16]), (*Block)(a[:16]), (*Block)(b[:16]))
+	XorBlock((*Block)(dst[16:]), (*Block)(a[16:]), (*Block)(b[16:]))
 }
 
 // XorBlock4 computes dst = a XOR b for Block4.
 func XorBlock4(dst, a, b *Block4) {
-	aPtr := (*[8]uint64)(unsafe.Pointer(a))
-	bPtr := (*[8]uint64)(unsafe.Pointer(b))
-	dstPtr := (*[8]uint64)(unsafe.Pointer(dst))
-	dstPtr[0] = aPtr[0] ^ bPtr[0]
-	dstPtr[1] = aPtr[1] ^ bPtr[1]
-	dstPtr[2] = aPtr[2] ^ bPtr[2]
-	dstPtr[3] = aPtr[3] ^ bPtr[3]
-	dstPtr[4] = aPtr[4] ^ bPtr[4]
-	dstPtr[5] = aPtr[5] ^ bPtr[5]
-	dstPtr[6] = aPtr[6] ^ bPtr[6]
-	dstPtr[7] = aPtr[7] ^ bPtr[7]
+	XorBlock((*Block)(dst[:16]), (*Block)(a[:16]), (*Block)(b[:16]))
+	XorBlock((*Block)(dst[16:32]), (*Block)(a[16:32]), (*Block)(b[16:32]))
+	XorBlock((*Block)(dst[32:48]), (*Block)(a[32:48]), (*Block)(b[32:48]))
+	XorBlock((*Block)(dst[48:]), (*Block)(a[48:]), (*Block)(b[48:]))
 }

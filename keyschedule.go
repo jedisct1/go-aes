@@ -3,7 +3,6 @@ package aes
 import (
 	"encoding/binary"
 	"errors"
-	"unsafe"
 )
 
 // KeySchedule holds the expanded round keys for AES encryption and decryption.
@@ -84,19 +83,12 @@ func expandKey(key []byte, roundKeys []Block, rounds int) {
 
 	totalWords := nb * (rounds + 1)
 
-	// Use the roundKeys array directly as our word storage
-	// Each Block is 16 bytes = 4 uint32 words
-	// We'll interpret the contiguous memory as uint32 words
-	wordsPtr := unsafe.Pointer(&roundKeys[0])
-
-	// Helper to get word at index i
+	// Store words directly in their output byte order, without requiring word-aligned blocks.
 	getWord := func(i int) uint32 {
-		return *(*uint32)(unsafe.Add(wordsPtr, uintptr(i)*4))
+		return binary.BigEndian.Uint32(roundKeys[i/4][(i%4)*4:])
 	}
-
-	// Helper to set word at index i
 	setWord := func(i int, val uint32) {
-		*(*uint32)(unsafe.Add(wordsPtr, uintptr(i)*4)) = val
+		binary.BigEndian.PutUint32(roundKeys[i/4][(i%4)*4:], val)
 	}
 
 	// Copy the key into the first nk words (big-endian)
@@ -115,17 +107,6 @@ func expandKey(key []byte, roundKeys []Block, rounds int) {
 		}
 
 		setWord(i, getWord(i-nk)^temp)
-	}
-
-	// Convert from native endian to big-endian in-place
-	// This ensures column-major order output
-	for i := 0; i < totalWords; i++ {
-		w := getWord(i)
-		ptr := (*[4]byte)(unsafe.Add(wordsPtr, uintptr(i)*4))
-		ptr[0] = byte(w >> 24)
-		ptr[1] = byte(w >> 16)
-		ptr[2] = byte(w >> 8)
-		ptr[3] = byte(w)
 	}
 }
 

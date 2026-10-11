@@ -1,3 +1,5 @@
+//go:build !purego
+
 // Deoxys-BC-256 and ButterKnife assembly optimizations for amd64
 // Uses Intel AES-NI instructions for hardware acceleration
 #include "textflag.h"

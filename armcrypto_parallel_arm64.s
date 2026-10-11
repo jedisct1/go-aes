@@ -1,3 +1,5 @@
+//go:build !purego
+
 // ARM Crypto Extensions parallel operations for ARM64
 // Process multiple AES blocks to reduce Go/Assembly boundary crossings
 

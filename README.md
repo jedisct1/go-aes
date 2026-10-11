@@ -60,7 +60,7 @@ A Go library exposing the fundamental building blocks of AES encryption for deve
 - Large-block ciphers: Vistrutah-256 and Vistrutah-512
 - Expanding PRF: ButterKnife (128-bit to 1024-bit expansion)
 - Leakage-resistant AEAD: UEDTDM and UEDTMX, single-length-key BC modes with rate 1/4 and Grade-3 leakage resistance
-- Cross-platform: Identical results on Intel and ARM with automatic fallback to pure Go
+- Cross-platform: Hardware acceleration on amd64 and arm64, with automatic pure Go fallback on other architectures
 
 ## Installation
 
@@ -639,9 +639,10 @@ Available in standard, KeyFirst, NoKey, and HW variants.
 ## Testing
 
 ```sh
-go test -v              # Run all tests
-go test -v -run TestName  # Run specific test
-go test -bench=.        # Run benchmarks
+go test -v               # Run all tests
+go test -v -tags purego  # Run purego-tag tests
+go test -v -run TestName # Run specific test
+go test -bench=.         # Run benchmarks
 ```
 
 The test suite includes FIPS-197 test vectors and cross-platform tests ensuring hardware and software implementations produce identical results.

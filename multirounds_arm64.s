@@ -1,3 +1,5 @@
+//go:build !purego
+
 // Multi-round AES operations using ARM Crypto extensions
 // Optimized to keep block in register across multiple rounds
 #include "textflag.h"

@@ -1,3 +1,5 @@
+//go:build !purego
+
 // Haraka v2 ARM Crypto hardware acceleration for ARM64
 #include "textflag.h"
 

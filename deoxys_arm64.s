@@ -1,3 +1,5 @@
+//go:build !purego
+
 // Deoxys-BC-256 and ButterKnife assembly optimizations for arm64
 // Uses ARM Crypto extensions (AESE, AESD, AESMC, AESIMC)
 #include "textflag.h"

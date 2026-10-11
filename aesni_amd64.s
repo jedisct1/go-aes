@@ -1,3 +1,5 @@
+//go:build !purego
+
 // AES-NI hardware acceleration for AMD64 (Intel/AMD x86-64)
 #include "textflag.h"
 

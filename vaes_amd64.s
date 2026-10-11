@@ -1,3 +1,5 @@
+//go:build !purego
+
 // VAES hardware acceleration for AMD64 (Intel/AMD x86-64 with AVX2/AVX512)
 // Requires VAES + AVX2 for 2-block operations
 // Requires VAES + AVX512 for 4-block operations

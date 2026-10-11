@@ -1,3 +1,5 @@
+//go:build !purego
+
 // ARM Crypto extensions hardware acceleration for ARM64
 #include "textflag.h"
 
