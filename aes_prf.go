@@ -8,7 +8,15 @@ package aes
 // The middle state is taken after round 4 with a 128-bit key, round 6 with
 // a 192-bit key and round 7 with a 256-bit key.
 //
-// Round 4 for 128-bit keys follows Derbez et al., ToSC 2018(2).
+// For 128-bit keys, this uses round 4 instead of Mennink and Neves's original
+// round 5. This choice follows the analysis of Derbez et al., ToSC 2018(2).
+// It therefore differs from Mennink and Neves's AES-PRF-128 instance.
+//
+// References:
+//   - Mennink and Neves, "Optimal PRFs from Blockcipher Designs":
+//     https://doi.org/10.13154/tosc.v2017.i3.228-252
+//   - Derbez et al., "Cryptanalysis of AES-PRF and Its Dual":
+//     https://doi.org/10.13154/tosc.v2018.i2.161-191
 type AESPRF struct {
 	rounds int
 	rk     [15]Block

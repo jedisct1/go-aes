@@ -7,7 +7,7 @@ import (
 	aes "github.com/jedisct1/go-aes"
 )
 
-// Skye KDF from https://eprint.iacr.org/2024/781
+// Skye KDF from https://eprint.iacr.org/2023/781
 // Uses DExtLsb extraction + FExp expansion with ButterKnife.
 
 // SkyeInfo is the 256-bit context information (Signal's "info" string).
