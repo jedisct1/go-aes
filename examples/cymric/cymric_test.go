@@ -207,6 +207,12 @@ func TestCymric1InputValidation(t *testing.T) {
 	if err != ErrInvalidInputLength {
 		t.Errorf("Expected ErrInvalidInputLength for nonce+ad > 15, got: %v", err)
 	}
+
+	// Test: nonce > 12
+	err = ctx.Cymric1Encrypt(make([]byte, 0), &tag, make([]byte, 0), make([]byte, 0), make([]byte, NonceMaxBytes+1))
+	if err != ErrInvalidInputLength {
+		t.Errorf("Expected ErrInvalidInputLength for nonce > 12, got: %v", err)
+	}
 }
 
 func TestCymric2InputValidation(t *testing.T) {
@@ -224,6 +230,12 @@ func TestCymric2InputValidation(t *testing.T) {
 	err = ctx.Cymric2Encrypt(make([]byte, 4), &tag, make([]byte, 4), make([]byte, 8), make([]byte, 8))
 	if err != ErrInvalidInputLength {
 		t.Errorf("Expected ErrInvalidInputLength for nonce+ad > 15, got: %v", err)
+	}
+
+	// Test: nonce > 12
+	err = ctx.Cymric2Encrypt(make([]byte, 0), &tag, make([]byte, 0), make([]byte, 0), make([]byte, NonceMaxBytes+1))
+	if err != ErrInvalidInputLength {
+		t.Errorf("Expected ErrInvalidInputLength for nonce > 12, got: %v", err)
 	}
 }
 

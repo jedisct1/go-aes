@@ -2,6 +2,8 @@
 //
 // Cymric is an AEAD scheme using two independent AES-128 keys, designed for
 // short messages with minimal overhead. It provides 128-bit authentication tags.
+// Nonce length must remain fixed for all messages under one key, because nonce
+// and associated data concatenate without a separator.
 //
 // Two variants are provided:
 //   - Cymric1: |msg| + |nonce| <= 16, |nonce| + |ad| <= 15
@@ -75,6 +77,9 @@ func encrypt(block *aes.Block, key0 *aes.Block, keys *aes.RoundKeys10) {
 //   - ad: associated data (authenticated but not encrypted)
 //   - nonce: unique nonce (up to 12 bytes)
 func (ctx *Context) Cymric1Encrypt(out []byte, tag *[TagBytes]byte, msg, ad, nonce []byte) error {
+	if len(nonce) > NonceMaxBytes {
+		return ErrInvalidInputLength
+	}
 	if len(msg)+len(nonce) > BlockBytes {
 		return ErrInvalidInputLength
 	}
@@ -143,6 +148,9 @@ func (ctx *Context) Cymric1Encrypt(out []byte, tag *[TagBytes]byte, msg, ad, non
 // Returns ErrAuthenticationFailed if the tag verification fails.
 // On failure, the output buffer is zeroed.
 func (ctx *Context) Cymric1Decrypt(out []byte, cipher []byte, tag *[TagBytes]byte, ad, nonce []byte) error {
+	if len(nonce) > NonceMaxBytes {
+		return ErrInvalidInputLength
+	}
 	if len(cipher)+len(nonce) > BlockBytes {
 		return ErrInvalidInputLength
 	}
@@ -215,6 +223,9 @@ func (ctx *Context) Cymric1Decrypt(out []byte, cipher []byte, tag *[TagBytes]byt
 //   - ad: associated data (authenticated but not encrypted)
 //   - nonce: unique nonce (up to 12 bytes)
 func (ctx *Context) Cymric2Encrypt(out []byte, tag *[TagBytes]byte, msg, ad, nonce []byte) error {
+	if len(nonce) > NonceMaxBytes {
+		return ErrInvalidInputLength
+	}
 	if len(msg) > BlockBytes {
 		return ErrInvalidInputLength
 	}
@@ -282,6 +293,9 @@ func (ctx *Context) Cymric2Encrypt(out []byte, tag *[TagBytes]byte, msg, ad, non
 // Returns ErrAuthenticationFailed if the tag verification fails.
 // On failure, the output buffer is zeroed.
 func (ctx *Context) Cymric2Decrypt(out []byte, cipher []byte, tag *[TagBytes]byte, ad, nonce []byte) error {
+	if len(nonce) > NonceMaxBytes {
+		return ErrInvalidInputLength
+	}
 	if len(cipher) > BlockBytes {
 		return ErrInvalidInputLength
 	}
